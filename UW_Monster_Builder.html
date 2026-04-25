@@ -308,11 +308,13 @@
     .monster-inputs .field-group:nth-child(3),
     .monster-inputs .field-group:nth-child(4) { grid-column: auto; }
   }
-  @media print {
-    body > * { display: none !important; }
-    #print-area { display: block !important; }
+  @media screen {
+    #print-area { display: none !important; }
   }
-  #print-area { display: none; }
+  @media print {
+    body > * { visibility: hidden; }
+    #print-area { visibility: visible; position: fixed; top: 0; left: 0; width: 100%; }
+  }
 </style>
 </head>
 <body>
