@@ -308,13 +308,11 @@
     .monster-inputs .field-group:nth-child(3),
     .monster-inputs .field-group:nth-child(4) { grid-column: auto; }
   }
-  @media screen {
-    #print-area { display: none !important; }
-  }
   @media print {
-    body > * { visibility: hidden; }
-    #print-area { visibility: visible; position: fixed; top: 0; left: 0; width: 100%; }
+    body > * { display: none !important; }
+    #print-area { display: block !important; position: fixed; top: 0; left: 0; width: 100%; background: #fff; }
   }
+  #print-area { display: none; }
 </style>
 </head>
 <body>
@@ -1487,7 +1485,10 @@ function printMonster() {
     + section('Skills', skRows)
     + '</div>';
 
+  const pa = document.getElementById('print-area');
+  pa.style.display = 'block';
   window.print();
+  pa.style.display = 'none';
 }
 
 // ─── Global click to close dropdown ───────────────────
