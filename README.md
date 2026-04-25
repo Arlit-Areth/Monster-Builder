@@ -274,6 +274,22 @@
   .detail-incant { font-size: 12px; color: var(--color-text-info); font-style: italic; margin-bottom: 8px; padding: 6px 10px; background: var(--color-background-info); border-radius: 4px; border: 0.5px solid var(--color-border-info); line-height: 1.5; }
   .detail-desc { font-size: 12px; color: var(--color-text-secondary); line-height: 1.65; }
   .detail-empty { font-size: 13px; color: var(--color-text-tertiary); font-style: italic; text-align: center; padding: 2rem 0; }
+  /* Summary entries with descriptions */
+  .summary-tags { flex-direction: column; gap: 8px; }
+  .sum-entry { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 9px 12px; background: var(--color-background-secondary); }
+  .sum-entry.is-spell { border-color: var(--color-border-info); background: var(--color-background-info); }
+  .sum-entry.is-monster { border-color: var(--color-border-warning); background: var(--color-background-warning); }
+  .sum-entry.is-skill { border-color: var(--color-border-success); background: var(--color-background-success); }
+  .sum-entry-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .sum-entry-name { font-size: 13px; font-weight: 600; }
+  .sum-entry.is-spell .sum-entry-name { color: var(--color-text-info); }
+  .sum-entry.is-monster .sum-entry-name { color: var(--color-text-warning); }
+  .sum-entry.is-skill .sum-entry-name { color: var(--color-text-success); }
+  .sum-entry-type { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--color-text-tertiary); white-space: nowrap; flex-shrink: 0; }
+  .sum-entry-call { font-size: 11px; font-style: italic; color: var(--color-text-info); margin: 3px 0 4px; padding: 4px 8px; background: rgba(0,0,0,0.06); border-radius: 3px; border-left: 2px solid var(--color-border-info); line-height: 1.4; }
+  .sum-entry.is-monster .sum-entry-call { border-left-color: var(--color-border-warning); }
+  .sum-entry.is-skill .sum-entry-call { border-left-color: var(--color-border-success); }
+  .sum-entry-desc { font-size: 11px; color: var(--color-text-secondary); line-height: 1.6; }
   @media (max-width: 680px) {
     .main-layout { grid-template-columns: 1fr; }
     .monster-inputs { grid-template-columns: 1fr 1fr; }
@@ -1081,10 +1097,31 @@ function updateSummary() {
     tagsEl.innerHTML = '<span class="summary-empty-note">No skills, spells, or abilities added yet.</span>';
     return;
   }
+
   tagsEl.innerHTML = filledRows.map(r => {
-    const tc = r.item._type === 'spell' ? 'is-spell' : r.item._type === 'monster' ? 'is-monster' : 'is-skill';
-    const cnt = r.count > 1 ? '<span class="tag-count">\u00d7' + r.count + '</span>' : '';
-    return '<span class="sum-tag ' + tc + '">' + r.item.name + cnt + '</span>';
+    const item = r.item;
+    const tc = item._type === 'spell' ? 'is-spell' : item._type === 'monster' ? 'is-monster' : 'is-skill';
+    const cnt = r.count > 1 ? ' <span class="tag-count">\u00d7' + r.count + '</span>' : '';
+    const typeLabel = item._type === 'spell' ? item.cat + ' Spell' : item._type === 'monster' ? 'Monster Ability' : (item.cat || 'Skill');
+
+    // Build call/incant line
+    let callLine = '';
+    if (item.call && item.call !== '(Passive \u2014 no call)' && item.call !== '(Passive \u2014 listed in racial features)' && item.call !== '(Passive \u2014 Undead State descriptor)' && item.call !== '(Passive \u2014 Undead Age template)') {
+      callLine = '<div class="sum-entry-call">\uD83D\uDCE2 ' + item.call + '</div>';
+    } else if (item.incant) {
+      callLine = '<div class="sum-entry-call">\uD83D\uDCDC ' + item.incant + '</div>';
+    }
+
+    const desc = item.desc || '';
+
+    return '<div class="sum-entry ' + tc + '">'
+      + '<div class="sum-entry-header">'
+      + '<span class="sum-entry-name">' + item.name + cnt + '</span>'
+      + '<span class="sum-entry-type">' + typeLabel + '</span>'
+      + '</div>'
+      + callLine
+      + '<div class="sum-entry-desc">' + desc + '</div>'
+      + '</div>';
   }).join('');
 }
 
@@ -1095,28 +1132,53 @@ function printMonster() {
   const apVal   = document.getElementById('inp-ap').value.trim()   || '\u2014';
   const filledRows = rows.filter(r => r.item);
 
-  const monRows  = filledRows.filter(r => r.item._type === 'monster');
-  const spRows   = filledRows.filter(r => r.item._type === 'spell');
-  const skRows   = filledRows.filter(r => r.item._type === 'skill');
+  const monRows = filledRows.filter(r => r.item._type === 'monster');
+  const spRows  = filledRows.filter(r => r.item._type === 'spell');
+  const skRows  = filledRows.filter(r => r.item._type === 'skill');
+
+  function entryHtml(r) {
+    const item = r.item;
+    const typeLabel = item._type === 'spell'
+      ? (item.cat || '') + ' Spell, Circle ' + (item.level || '?')
+      : item._type === 'monster' ? 'Monster Ability'
+      : (item.cat || 'Skill');
+    const cnt = r.count > 1 ? ' \u00d7' + r.count : '';
+
+    let callLine = '';
+    if (item.call && !item.call.startsWith('(Passive')) {
+      callLine = '<div style="font-size:10px;color:#444;font-style:italic;margin:2px 0 3px;padding-left:8px;border-left:2px solid #999">'
+        + '\uD83D\uDCE2 ' + item.call + '</div>';
+    } else if (item.incant) {
+      callLine = '<div style="font-size:10px;color:#444;font-style:italic;margin:2px 0 3px;padding-left:8px;border-left:2px solid #999">'
+        + '\uD83D\uDCDC ' + item.incant + '</div>';
+    }
+
+    const desc = item.desc || '';
+
+    return '<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid #ddd">'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'
+      + '<span style="font-size:13px;font-weight:bold">' + item.name + cnt + '</span>'
+      + '<span style="font-size:9px;color:#666;white-space:nowrap;text-transform:uppercase;letter-spacing:0.5px">' + typeLabel + '</span>'
+      + '</div>'
+      + callLine
+      + '<div style="font-size:11px;color:#333;line-height:1.55;margin-top:3px">' + desc + '</div>'
+      + '</div>';
+  }
 
   function section(label, items) {
     if (!items.length) return '';
-    const rowsHtml = items.map(r =>
-      '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:0.5px dotted #ddd;font-size:12px">'
-      + '<span>' + r.item.name + (r.count > 1 ? ' \u00d7' + r.count : '') + '</span>'
-      + '<span style="font-size:10px;color:#666">' + (r.item.cat || r.item.sphere || '') + '</span>'
-      + '</div>'
-    ).join('');
-    return '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #aaa;margin:12px 0 8px;padding-bottom:3px;color:#444">' + label + '</div>' + rowsHtml;
+    return '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #333;margin:16px 0 10px;padding-bottom:3px;color:#222;font-weight:bold">'
+      + label + ' (' + items.length + ')</div>'
+      + items.map(entryHtml).join('');
   }
 
   document.getElementById('print-area').innerHTML =
-    '<div style="font-family:serif;padding:24px;color:#111">'
-    + '<div style="font-size:20px;font-weight:bold;border-bottom:2px solid #333;margin-bottom:12px;padding-bottom:8px">' + typeVal + '</div>'
-    + '<div style="display:flex;gap:28px;margin-bottom:14px">'
-    + '<div style="display:flex;flex-direction:column"><span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#666">Body</span><span style="font-size:15px;font-weight:bold">' + bodyVal + '</span></div>'
-    + '<div style="display:flex;flex-direction:column"><span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#666">Armour Points</span><span style="font-size:15px;font-weight:bold">' + apVal + '</span></div>'
-    + '<div style="display:flex;flex-direction:column"><span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#666">Total Abilities</span><span style="font-size:15px;font-weight:bold">' + filledRows.length + '</span></div>'
+    '<div style="font-family:serif;padding:24px 28px;color:#111;max-width:720px">'
+    + '<div style="font-size:22px;font-weight:bold;border-bottom:3px solid #111;margin-bottom:12px;padding-bottom:8px">' + typeVal + '</div>'
+    + '<div style="display:flex;gap:32px;margin-bottom:6px;padding-bottom:12px;border-bottom:1px solid #ccc">'
+    + '<div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#666">Body</div><div style="font-size:18px;font-weight:bold">' + bodyVal + '</div></div>'
+    + '<div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#666">Armour Points</div><div style="font-size:18px;font-weight:bold">' + apVal + '</div></div>'
+    + '<div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#666">Total Abilities</div><div style="font-size:18px;font-weight:bold">' + filledRows.length + '</div></div>'
     + '</div>'
     + section('Monster Abilities', monRows)
     + section('Spells', spRows)
