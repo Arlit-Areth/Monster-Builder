@@ -1621,7 +1621,6 @@ function printMonster() {
     + '<td style="padding:4px 28px 8px 0"><div style="font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#666">Body</div><div style="font-size:18px;font-weight:bold">' + bodyVal + '</div></td>'
     + '<td style="padding:4px 28px 8px 0"><div style="font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#666">Armour Points</div><div style="font-size:18px;font-weight:bold">' + apVal + '</div></td>'
     + '<td style="padding:4px 28px 8px 0"><div style="font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#666">Damage</div><div style="font-size:18px;font-weight:bold">' + dmgVal + '</div></td>'
-    + '<td style="padding:4px 28px 8px 0"><div style="font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#666">Total Abilities</div><div style="font-size:18px;font-weight:bold">' + filled.length + '</div></td>'
     + '</tr></table>'
     + section('Monster Abilities', monRows)
     + section('Spells', spRows)
