@@ -250,6 +250,8 @@
   .print-btn { padding: 5px 14px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-family: var(--font-sans); font-size: 12px; font-weight: 500; cursor: pointer; }
   .print-btn:hover { background: var(--color-background-secondary); }
   .rows-container { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  #skills-panel-body { min-height: 600px; display: flex; flex-direction: column; }
+  #skills-panel-body .add-row-btn { margin-top: auto; }
   .ability-row { display: grid; grid-template-columns: 1fr 80px 32px; gap: 8px; align-items: center; }
   .add-row-btn { width: 100%; padding: 9px; border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); background: transparent; color: var(--color-text-secondary); font-family: var(--font-sans); font-size: 13px; cursor: pointer; }
   .add-row-btn:hover { background: var(--color-background-secondary); border-style: solid; }
@@ -363,7 +365,7 @@
     <div>
       <div class="panel">
         <div class="panel-header"><span class="panel-title">Skills, Spells &amp; Monster Abilities</span></div>
-        <div class="panel-body">
+        <div class="panel-body" id="skills-panel-body">
           <div class="rows-container" id="rows-container"></div>
           <button class="add-row-btn" onclick="addRow()">&#65291; Add Skill / Spell / Ability</button>
         </div>
