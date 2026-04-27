@@ -10,7 +10,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then
 if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){caches.delete(x);});});}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UW Monster Builder</title>
+<title>Unofficial UW Monster Builder</title>
 <style>
 
   :root {
