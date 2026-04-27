@@ -309,7 +309,7 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
 <div class="app">
   <div class="app-header">
     <div class="app-title">&#9876; UW Monster Builder</div>
-    <div class="app-subtitle">Underworld LARP &middot; NPC / Creature Design Tool</div>
+    <div class="app-subtitle">Unofficial Underworld LARP &middot; NPC / Creature Design Tool</div>
   </div>
   <div class="panel">
     <div class="panel-header"><span class="panel-title">Monster Profile</span></div>
