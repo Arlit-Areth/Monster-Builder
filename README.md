@@ -2257,7 +2257,7 @@ function genAddToBuilder(skillName, sphereName, circles) {
       var sphereItem = {
         name: 'Sphere: ' + sphereName + ' (Circles 1-' + circles + ')',
         cat: sphereName + ' Sphere',
-        desc: 'Sphere of ' + sphereName + ' — circles 1 through ' + circles + ' purchased. Max circle at this level: ' + maxCirclesAtLevel(parseInt(document.getElementById('gen-level').value||5)),
+        desc: 'Sphere of ' + sphereName + ' — circles 1 through ' + circles + ' purchased. Max circle at this level: ' + (GEN_MAX_CIRCLES[Math.min(parseInt(document.getElementById('gen-level').value||5), 20)] || 9),
         incant: '',
         _type: 'skill'
       };
