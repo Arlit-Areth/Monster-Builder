@@ -1559,26 +1559,26 @@ const GEN_COMBAT_POOL = [
   {name:'Elemental Attunement',  weight:7,  prereqs:[], primary:['scholar','mage','druid']},
   {name:'Necromantic Arts',      weight:4,  prereqs:[], primary:['scholar']},
   {name:'Demonic/Angelic Arts',  weight:4,  prereqs:[], primary:['scholar']},
-  // ── WARRIOR FRAG — damage/debuff frags kept high, utility dropped ──
-  {name:'Trip',               weight:7, prereqs:[], primary:['warrior','mercenary']},  // 1 Body + mobility debuff
-  {name:'Cripple',            weight:6, prereqs:[], primary:['warrior']},              // 1 Body + limb debuff
-  {name:'Decapitate',         weight:7, prereqs:['Slay/Parry'], primary:['warrior']}, // instant Death Count
-  {name:'Disembowel',         weight:6, prereqs:['Specialization +1: Weapon Specific'], primary:['warrior']}, // Bleed/death timer
-  {name:'Whirlwind of Blows', weight:7, prereqs:['Flurry of Blows'], primary:['warrior']}, // +5 damage
-  {name:'Battlefield Repair', weight:1, prereqs:[], primary:['warrior']},              // utility only
-  // ── ROGUE FRAG — only damage-dealing or damage-reflecting frags stay high ──
-  {name:'Riposte',       weight:7, prereqs:[], primary:['rogue']},     // reflects attack damage
-  {name:'Sucker Punch',  weight:6, prereqs:[], primary:['rogue']},     // 1 Body + stun
-  {name:'Tumble',        weight:2, prereqs:[], primary:['rogue']},     // halves incoming damage — utility/survival
-  {name:'Escape',        weight:1, prereqs:[], primary:['rogue']},     // utility escape, no damage
-  {name:'Blindfighter',  weight:1, prereqs:[], primary:['rogue']},     // resist blind, no damage
-  {name:'Dirt in the Eye',weight:2,prereqs:[], primary:['rogue','warrior']}, // blinds target, no direct damage
-  // ── SCHOLAR FRAG — keep damage-enabling frags, drop pure utility ──
-  {name:'Combat Wizardry',weight:9, prereqs:['Self Mutilate'], primary:['scholar']}, // enables casting through damage
-  {name:'Harvest',        weight:6, prereqs:[], primary:['scholar']},  // regains spell after defence
-  {name:'Refocus',        weight:6, prereqs:[], primary:['scholar']},  // regains missed spell
-  {name:'Spell Parry',    weight:2, prereqs:[], primary:['scholar']},  // counters incoming spell, no direct damage
-  {name:'Spell Switch',   weight:2, prereqs:[], primary:['scholar']},  // utility versatility, no direct damage
+  // ── WARRIOR FRAG — class-locked to warrior only ──
+  {name:'Trip',               weight:7, prereqs:[], primary:['warrior'], classLocked:true},
+  {name:'Cripple',            weight:6, prereqs:[], primary:['warrior'], classLocked:true},
+  {name:'Decapitate',         weight:7, prereqs:['Slay/Parry'], primary:['warrior'], classLocked:true},
+  {name:'Disembowel',         weight:6, prereqs:['Specialization +1: Weapon Specific'], primary:['warrior'], classLocked:true},
+  {name:'Whirlwind of Blows', weight:7, prereqs:['Flurry of Blows'], primary:['warrior'], classLocked:true},
+  {name:'Battlefield Repair', weight:1, prereqs:[], primary:['warrior'], classLocked:true},
+  // ── ROGUE FRAG — class-locked to rogue only ──
+  {name:'Riposte',        weight:7, prereqs:[], primary:['rogue'], classLocked:true},
+  {name:'Sucker Punch',   weight:6, prereqs:[], primary:['rogue'], classLocked:true},
+  {name:'Tumble',         weight:2, prereqs:[], primary:['rogue'], classLocked:true},
+  {name:'Escape',         weight:1, prereqs:[], primary:['rogue'], classLocked:true},
+  {name:'Blindfighter',   weight:1, prereqs:[], primary:['rogue'], classLocked:true},
+  {name:'Dirt in the Eye',weight:2, prereqs:[], primary:['warrior'], classLocked:true},
+  // ── SCHOLAR FRAG — class-locked to scholar only ──
+  {name:'Combat Wizardry',weight:9, prereqs:['Self Mutilate'], primary:['scholar'], classLocked:true},
+  {name:'Harvest',        weight:6, prereqs:[], primary:['scholar'], classLocked:true},
+  {name:'Refocus',        weight:6, prereqs:[], primary:['scholar'], classLocked:true},
+  {name:'Spell Parry',    weight:2, prereqs:[], primary:['scholar'], classLocked:true},
+  {name:'Spell Switch',   weight:2, prereqs:[], primary:['scholar'], classLocked:true},
 ];
 
 // ── Main generator ────────────────────────────────────
@@ -1664,62 +1664,137 @@ function generateMonsterBuild(occupation, level) {
   }
 
   // ── PHASE 2: Weighted selection from combat skills + occupationals combined ──
-  // Add occupational abilities into the pool with appropriate weight
+  // Max purchases per skill (1 = single purchase only, >1 = stackable)
+  var MAX_PURCHASES = {
+    'Critical +2: Specific':      10, // +2 damage per purchase from behind
+    'Critical +2: Group':         10, // +2 damage per purchase (group)
+    'Dodge: Additional':           9, // +1 Dodge use/day per purchase
+    'Execute: Subsequent':         9, // +1 Execute use/day
+    'Execute: Master Subsequent':  9, // +1 Execute:Master use/day
+    'Slay/Parry: Subsequent':      9, // +1 Slay use/day
+    'Slay/Parry: Master Subsequent':9,// +1 Slay:Master use/day
+    'Weapon Specific Proficiency: Exotic': 4, // up to 4 exotic weapons
+    'Flurry of Blows':            10, // +1 use/day
+    'Whirlwind of Blows':         10, // +1 use/day
+    'Trip':                       10, // +1 use/day
+    'Cripple':                    10, // +1 use/day
+    'Decapitate':                 10, // +1 use/day (req Slay/Parry per purchase)
+    'Disembowel':                 10, // +1 use/day (req Spec per purchase)
+    'Sap':                        10, // +1 use/day
+    'Vital Blow':                 10, // +1 use/day
+    'Riposte':                    10, // +1 use/day
+    'Sucker Punch':               10, // +1 use/day
+    'Harvest':                    10, // +1 use/day
+    'Refocus':                    10, // +1 use/day
+    'Hamstring':                   3, // +3 Body per purchase (9 Body max)
+    'Dismember':                   3, // +5 Body per purchase (15 Body max)
+    'Shiv':                       10, // +1 use/day
+    'Silent Strike':              10, // +1 use/day
+    'Penetration':                10, // +1 use/day
+    'Song of Heroism':            10, // +1 use/day
+    'Song of Aversion':           10, // +1 use/day
+  };
+
+  // Skills where repeat purchases directly increase damage output (higher stack weight)
+  var DAMAGE_STACKERS = {
+    'Critical +2: Specific':  true,
+    'Critical +2: Group':     true,
+    'Hamstring':              true,
+    'Dismember':              true,
+    'Flurry of Blows':        true,
+    'Whirlwind of Blows':     true,
+  };
+
+  // Track purchase counts (separate from selectedNames which is now used for prereq tracking only)
+  var purchaseCounts = {};
+
+  // Override buy to support multiple purchases and track counts
+  function buyMulti(name, cost, note) {
+    if (!canAfford(cost)) return false;
+    var cur = purchaseCounts[name] || 0;
+    var max = MAX_PURCHASES[name] || 1;
+    if (cur >= max) return false;
+    remaining -= cost;
+    purchaseCounts[name] = cur + 1;
+    selectedNames[name] = true; // still mark for prereq checks
+    var countLabel = purchaseCounts[name] > 1 ? ' (x' + purchaseCounts[name] + ')' : '';
+    // Update existing entry or push new one
+    var existing = selected.find(function(s){ return s.name === name; });
+    if (existing) {
+      existing.count = purchaseCounts[name];
+      existing.cost += cost;
+      existing.name = name; // keep base name, display handles count
+    } else {
+      selected.push({name:name, cost:cost, note:note||'', count:1});
+    }
+    return true;
+  }
+
   var occAbils = GEN_OCC_ABILITIES[occupation] || [];
 
-  var pool = GEN_COMBAT_POOL.filter(function(sk) {
-    return !selectedNames[sk.name];
-  }).map(function(sk) {
-    // Use occupation-specific weight if available, otherwise fall back to class-based weight
-    var baseWeight = (sk.occWeight && sk.occWeight[occupation] !== undefined)
-      ? sk.occWeight[occupation]
-      : sk.weight;
-    var isPrimary = sk.primary && sk.primary.indexOf(cls) !== -1;
-    // If occWeight is defined, use it directly (already encodes occupation preference)
-    // If not, apply the standard 3x primary multiplier
-    var effWeight = sk.occWeight
-      ? baseWeight
-      : baseWeight * (isPrimary ? 3 : 1);
-    return Object.assign({}, sk, {
-      effWeight: effWeight,
-      isOcc: false
+  var pool = GEN_COMBAT_POOL
+    .filter(function(sk) {
+      // Class-locked frag skills are excluded entirely if the character's class doesn't match
+      if (sk.classLocked) {
+        return sk.primary && sk.primary.indexOf(cls) !== -1;
+      }
+      return true;
+    })
+    .map(function(sk) {
+      var baseWeight = (sk.occWeight && sk.occWeight[occupation] !== undefined)
+        ? sk.occWeight[occupation]
+        : sk.weight;
+      var isPrimary = sk.primary && sk.primary.indexOf(cls) !== -1;
+      var effWeight = sk.occWeight
+        ? baseWeight
+        : baseWeight * (isPrimary ? 3 : 1);
+      return Object.assign({}, sk, {effWeight: effWeight, isOcc: false});
     });
-  });
 
-  // Add occupational abilities as pool entries (weight 8, primary class equivalent)
+  // Add occupational abilities
   occAbils.forEach(function(ab) {
-    if (ab.minLevel <= level && !selectedNames[ab.name]) {
+    if (ab.minLevel <= level) {
       pool.push({
-        name: ab.name,
-        weight: 8,
-        effWeight: 24, // treated as primary-weighted (8 * 3)
-        prereqs: [],
-        primary: [cls],
-        isOcc: true,
-        occCost: ab.cp,
-        note: 'Occupational Ability'
+        name: ab.name, weight: 8, effWeight: 24,
+        prereqs: [], primary: [cls], isOcc: true,
+        occCost: ab.cp, note: 'Occupational Ability'
       });
     }
   });
 
   var attempts = 0;
-  while (remaining > 0 && attempts < 600) {
+  while (remaining > 0 && attempts < 1000) {
     attempts++;
 
     var eligible = pool.filter(function(sk) {
-      if (selectedNames[sk.name]) return false;
-      var cost = sk.isOcc ? sk.occCost : getCost(sk.name);
-      if (!cost || !canAfford(cost)) return false;
-      for (var i = 0; i < sk.prereqs.length; i++) {
-        if (!selectedNames[sk.prereqs[i]]) {
-          var pc = getCost(sk.prereqs[i]);
-          if (!canAfford(cost + pc)) return false;
+      var curCount = purchaseCounts[sk.name] || 0;
+      var maxCount = MAX_PURCHASES[sk.name] || 1;
+      if (curCount >= maxCount) return false;
+      // First purchase: require prereqs to be bought
+      if (curCount === 0) {
+        for (var i = 0; i < sk.prereqs.length; i++) {
+          if (!selectedNames[sk.prereqs[i]]) {
+            var pc = getCost(sk.prereqs[i]);
+            var cost2 = sk.isOcc ? sk.occCost : getCost(sk.name);
+            if (!canAfford(cost2 + pc)) return false;
+          }
         }
       }
+      var cost = sk.isOcc ? sk.occCost : getCost(sk.name);
+      if (!cost || !canAfford(cost)) return false;
       return true;
     });
 
     if (!eligible.length) break;
+
+    // Boost weight for damage stackers on repeat purchases
+    eligible = eligible.map(function(sk) {
+      var cur = purchaseCounts[sk.name] || 0;
+      if (cur > 0 && DAMAGE_STACKERS[sk.name]) {
+        return Object.assign({}, sk, {effWeight: sk.effWeight * 1.5});
+      }
+      return sk;
+    });
 
     var totalW = eligible.reduce(function(s, sk) { return s + sk.effWeight; }, 0);
     var rand = Math.random() * totalW;
@@ -1729,10 +1804,13 @@ function generateMonsterBuild(occupation, level) {
       if (rand <= 0) { chosen = eligible[i]; break; }
     }
 
-    var prereqOk = buyPrereqs(chosen.prereqs);
-    if (!prereqOk) {
-      pool = pool.filter(function(sk){ return sk.name !== chosen.name; });
-      continue;
+    // Buy prereqs for first purchase only
+    if ((purchaseCounts[chosen.name] || 0) === 0) {
+      var prereqOk = buyPrereqs(chosen.prereqs);
+      if (!prereqOk) {
+        pool = pool.filter(function(sk){ return sk.name !== chosen.name; });
+        continue;
+      }
     }
 
     var cost = chosen.isOcc ? chosen.occCost : getCost(chosen.name);
@@ -1741,9 +1819,7 @@ function generateMonsterBuild(occupation, level) {
           ? cls.charAt(0).toUpperCase() + cls.slice(1) + ' Skill'
           : 'Cross-class Skill');
 
-    if (!buy(chosen.name, cost, noteLabel)) {
-      pool = pool.filter(function(sk){ return sk.name !== chosen.name; });
-    } else {
+    if (!buyMulti(chosen.name, cost, noteLabel)) {
       pool = pool.filter(function(sk){ return sk.name !== chosen.name; });
     }
   }
@@ -2197,7 +2273,7 @@ function runGenerator() {
 
   // ── Auto-add all selections to the builder ──
   result.selections.forEach(function(sk) {
-    genAddToBuilder(sk.name, sk.sphere || '', sk.circles || 0);
+    genAddToBuilder(sk.name, sk.sphere || '', sk.circles || 0, sk.count || 1);
   });
 
   // ── Display summary of what was added ──
@@ -2227,7 +2303,7 @@ function runGenerator() {
     var costBadge = '<span class="gen-item-cost">' + sk.cost + ' CP</span>';
     return '<div class="gen-item' + cls2 + '">'
       + '<div class="gen-item-header">'
-      + '<span class="gen-item-name">' + sk.name + (sk.circles ? ' (Circles 1-' + sk.circles + ')' : '') + '</span>'
+      + '<span class="gen-item-name">' + sk.name + (sk.circles ? ' (Circles 1-' + sk.circles + ')' : '') + (sk.count > 1 ? ' <span style="font-size:10px;font-weight:bold;color:var(--color-text-warning)">×' + sk.count + '</span>' : '') + '</span>'
       + costBadge
       + '</div>'
       + (sk.note && !isSphere ? '<span class="gen-item-note">' + sk.note + '</span>' : '')
@@ -2244,16 +2320,13 @@ function runGenerator() {
 }
 
 
-function genAddToBuilder(skillName, sphereName, circles) {
-  // Find the item in ALL_ITEMS
+function genAddToBuilder(skillName, sphereName, circles, count) {
+  var qty = count || 1;
   var item = null;
 
   if (sphereName && circles > 0) {
-    // Add the sphere as multiple rows (one per circle) or as a note
-    // Find any spell from this sphere at circle 1 to use as a reference item
     item = ALL_ITEMS.find(function(i){ return i._type === 'spell' && i.cat === sphereName && i.level === 1; });
     if (item) {
-      // Add the sphere label as a skill entry note
       var sphereItem = {
         name: 'Sphere: ' + sphereName + ' (Circles 1-' + circles + ')',
         cat: sphereName + ' Sphere',
@@ -2274,13 +2347,18 @@ function genAddToBuilder(skillName, sphereName, circles) {
   // Regular skill — find in ALL_ITEMS
   item = ALL_ITEMS.find(function(i){ return i.name === skillName; });
   if (!item) {
-    // Create a stub
     item = {name: skillName, cat: 'Skill', desc: '', incant: '', _type: 'skill'};
   }
 
   addRow();
   var id = nextId - 1;
   setRowItem(id, item);
+  // Set count if multiple purchases
+  if (qty > 1) {
+    setRowCount(id, qty);
+    var cInp = document.getElementById('count-' + id);
+    if (cInp) cInp.value = qty;
+  }
   var inp2 = document.getElementById('search-' + id);
   if (inp2) inp2.value = item.name;
   updateSummary();
