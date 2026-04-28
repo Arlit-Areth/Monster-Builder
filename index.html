@@ -2172,12 +2172,19 @@ function runGenerator() {
   var level = parseInt(document.getElementById('gen-level').value) || 5;
   level = Math.max(1, Math.min(20, level));
 
-  // Clear all existing rows before generating new selections
+  // Full reset — same state as page load
   rows = [];
   nextId = 1;
   activeDropdown = null;
   focusedIndex = -1;
   renderRows();
+  // Reset all monster profile inputs
+  document.getElementById('inp-type').value = '';
+  document.getElementById('inp-body').value = '';
+  document.getElementById('inp-ap').value = '';
+  document.getElementById('inp-damage').value = '';
+  // Clear generator results panel
+  document.getElementById('gen-results').innerHTML = '<div class="gen-empty">Generating…</div>';
   updateSummary();
 
   var result = generateMonsterBuild(occ, level);
