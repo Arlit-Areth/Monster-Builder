@@ -293,6 +293,30 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
   .detail-incant { font-size: 12px; color: var(--color-text-info); font-style: italic; margin-bottom: 8px; padding: 6px 10px; background: var(--color-background-info); border-radius: 4px; border: 0.5px solid var(--color-border-info); line-height: 1.5; }
   .detail-desc { font-size: 12px; color: var(--color-text-secondary); line-height: 1.65; }
   .detail-empty { font-size: 13px; color: var(--color-text-tertiary); font-style: italic; text-align: center; padding: 2rem 0; }
+
+  /* ── Generator Panel ── */
+  .gen-panel { border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-lg); background: var(--color-background-primary); margin-bottom: 1rem; overflow: hidden; }
+  .gen-inputs { display: grid; grid-template-columns: 1fr 80px auto; gap: 10px; align-items: end; padding: 1.25rem; }
+  .gen-btn { padding: 7px 16px; border: 0.5px solid var(--color-border-info); border-radius: var(--border-radius-md); background: var(--color-background-info); color: var(--color-text-info); font-family: var(--font-sans); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .gen-btn:hover { opacity: 0.85; }
+  .gen-results { padding: 0 1.25rem 1.25rem; }
+  .gen-result-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .gen-result-title { font-size: 14px; font-weight: 600; }
+  .gen-result-meta { font-size: 11px; color: var(--color-text-secondary); }
+  .gen-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: var(--border-radius-md); margin-bottom: 6px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
+  .gen-item.is-sphere { background: var(--color-background-info); border-color: var(--color-border-info); }
+  .gen-item.is-prereq { opacity: 0.75; }
+  .gen-item-name { font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
+  .gen-item.is-sphere .gen-item-name { color: var(--color-text-info); }
+  .gen-item-note { font-size: 10px; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .gen-item-circles { font-size: 11px; color: var(--color-text-info); margin-top: 2px; }
+  .gen-item-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .gen-item-cost { font-size: 10px; font-weight: 600; color: var(--color-text-warning); white-space: nowrap; flex-shrink: 0; }
+  .gen-add-btn { margin-top: 4px; padding: 2px 8px; font-size: 10px; border: 0.5px solid var(--color-border-secondary); border-radius: 3px; background: transparent; color: var(--color-text-secondary); cursor: pointer; font-family: var(--font-sans); }
+  .gen-add-btn:hover { background: var(--color-background-tertiary,var(--color-background-secondary)); }
+  .gen-empty { font-size: 13px; color: var(--color-text-tertiary); font-style: italic; text-align: center; padding: 1.5rem 0; }
+  .gen-section-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--color-text-tertiary); margin: 10px 0 4px; font-weight: 600; }
+  @media (max-width: 680px) { .gen-inputs { grid-template-columns: 1fr 1fr; } .gen-inputs .gen-btn { grid-column: 1/-1; } }
   @media (max-width: 680px) {
     .main-layout { grid-template-columns: 1fr; }
     .monster-inputs { grid-template-columns: 1fr 1fr; }
@@ -350,6 +374,35 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
       <span class="summary-empty-note">No skills, spells, or abilities added yet.</span>
     </div>
   </div>
+  <!-- Random Generator -->
+  <div class="gen-panel">
+    <div class="panel-header"><span class="panel-title">&#127922; Ability Generator</span></div>
+    <div class="gen-inputs">
+      <div class="field-group">
+        <label class="field-label">Occupation</label>
+        <select class="field-input" id="gen-occ">
+          <optgroup label="Warrior">
+            <option>Mercenary</option><option>Ranger</option><option>Templar</option>
+          </optgroup>
+          <optgroup label="Rogue">
+            <option>Nightblade</option><option>Assassin</option><option>Wytchhunter</option>
+          </optgroup>
+          <optgroup label="Scholar">
+            <option>Mage</option><option>Druid</option><option>Bard</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Level</label>
+        <input class="field-input" id="gen-level" type="number" min="1" max="20" value="5">
+      </div>
+      <button class="gen-btn" onclick="runGenerator()">&#127922; Generate</button>
+    </div>
+    <div class="gen-results" id="gen-results">
+      <div class="gen-empty">Select an occupation, level, and skill count then click Generate.</div>
+    </div>
+  </div>
+
   <div class="main-layout">
     <div>
       <div class="panel">
@@ -1292,6 +1345,366 @@ const SKILLS_VERBATIM = [
 ];
 
 
+
+// ═══════════════════════════════════════════════════════
+// CP-BASED RANDOM GENERATOR
+// ═══════════════════════════════════════════════════════
+
+// Level -> total CP threshold (from character builder TABLE)
+const GEN_LEVEL_CP = {
+  1:150,2:250,3:350,4:450,5:550,6:650,7:750,8:850,9:950,10:1050,
+  11:1150,12:1250,13:1350,14:1450,15:1550,16:1650,17:1750,18:1850,19:1950,20:2050
+};
+
+// Occupation index in costs arrays: [M,R,T,N,A,W,Mg,Dr,Ba]
+const GEN_OCC_IDX = {
+  Mercenary:0, Ranger:1, Templar:2,
+  Nightblade:3, Assassin:4, Wytchhunter:5,
+  Mage:6, Druid:7, Bard:8
+};
+
+const GEN_OCC_CLASS = {
+  Mercenary:'warrior', Ranger:'warrior', Templar:'warrior',
+  Nightblade:'rogue',  Assassin:'rogue', Wytchhunter:'rogue',
+  Mage:'scholar',      Druid:'scholar',  Bard:'scholar'
+};
+
+// Spell level costs [M,R,T,N,A,W,Mg,Dr,Ba] per circle 1-9
+const GEN_SPELL_LEVEL_COSTS = [
+  [30,30,10,20,40,10,10,10,10],
+  [40,30,10,20,60,10,10,10,10],
+  [80,60,20,40,80,20,20,20,20],
+  [100,60,30,40,100,30,20,20,30],
+  [100,90,40,60,100,30,30,30,30],
+  [120,90,50,60,120,40,30,30,40],
+  [120,120,60,80,120,50,40,40,60],
+  [150,120,70,80,150,50,40,40,70],
+  [150,150,80,100,150,60,50,50,80]
+];
+
+// Max circles by level (scholar column from TABLE)
+const GEN_MAX_CIRCLES = {
+  1:3,2:4,3:4,4:5,5:6,6:6,7:7,8:8,9:8,10:9,
+  11:10,12:10,13:11,14:12,15:12,16:13,17:14,18:14,19:15,20:16
+};
+
+// Skill costs [M,R,T,N,A,W,Mg,Dr,Ba]
+const GEN_SKILL_COSTS = {
+  // Scholar
+  'Anatomy':[40,40,40,40,40,40,40,40,35],
+  'Read & Write':[50,50,50,50,50,50,40,40,35],
+  'Read Magic':[60,50,55,60,60,50,20,25,30],
+  'Read Magic: Advanced':[80,70,75,80,80,70,30,35,40],
+  'Self Mutilate':[15,15,15,15,15,15,15,15,15],
+  'Mysticism':[50,50,50,50,50,50,50,50,50],
+  'Demonic/Angelic Arts':[40,40,40,40,40,40,40,40,40],
+  'Necromantic Arts':[40,40,40,40,40,40,40,40,40],
+  'First Aid':[60,60,60,60,60,60,60,60,60],
+  'Physician':[45,45,45,45,45,45,45,45,45],
+  'Elemental Attunement':[25,25,25,25,25,25,25,25,25],
+  // Warrior
+  'Ambidexterity':[20,30,35,40,30,45,75,75,75],
+  'Florentine':[40,40,45,70,65,70,110,110,110],
+  'Flurry of Blows':[40,50,55,75,65,75,125,100,125],
+  'Heavy Armour':[15,20,20,40,45,45,65,60,65],
+  'Shield':[50,75,60,110,120,95,140,140,140],
+  'Self Mutilate':[15,15,15,15,15,15,15,15,15],
+  'Specialization +1: Weapon Specific':[120,100,105,130,130,130,230,190,230],
+  'Specialization +1: Weapon Group':[170,150,155,180,180,180,280,240,280],
+  'Weapon Group Proficiency: Medium':[40,40,40,50,50,50,80,80,80],
+  'Weapon Group Proficiency: Large':[70,70,70,90,90,90,120,120,120],
+  'Weapon Specific Proficiency: Exotic':[70,80,85,110,110,110,160,160,160],
+  'Slay/Parry':[100,120,130,170,150,170,250,200,250],
+  'Slay/Parry: Master':[120,140,150,200,175,200,280,220,280],
+  'Slay/Parry: Subsequent':[100,120,130,170,150,170,250,200,250],
+  'Weapon Refocus':[60,60,60,70,70,70,100,100,100],
+  // Rogue
+  'Critical +2: Specific':[150,125,130,120,100,130,230,180,130],
+  'Critical +2: Group':[170,145,150,140,120,150,250,200,150],
+  'Dodge':[170,140,150,100,120,130,250,200,80],
+  'Dodge: Additional':[170,140,150,100,120,130,250,200,80],
+  'Execute':[170,130,150,120,100,130,250,200,150],
+  'Execute: Master':[190,150,170,140,120,150,270,220,170],
+  'Execute: Subsequent':[170,130,150,120,100,130,250,200,150],
+  'Garrotte':[120,100,130,80,75,130,220,200,130],
+  'Sap':[55,50,55,45,40,55,110,90,55],
+  'Vital Blow':[65,55,70,55,45,55,120,100,55],
+  // Warrior Frag
+  'Cripple':[30,30,30,30,30,30,30,30,30],
+  'Decapitate':[70,70,70,70,70,70,70,70,70],
+  'Disembowel':[50,50,50,50,50,50,50,50,50],
+  'Trip':[20,20,20,20,20,20,20,20,20],
+  'Whirlwind of Blows':[50,50,50,50,50,50,50,50,50],
+  'Battlefield Repair':[30,30,30,30,30,30,30,30,30],
+  // Rogue Frag
+  'Blindfighter':[20,20,20,20,20,20,20,20,20],
+  'Escape':[25,25,25,25,25,25,25,25,25],
+  'Riposte':[40,40,40,40,40,40,40,40,40],
+  'Sucker Punch':[35,35,35,35,35,35,35,35,35],
+  'Tumble':[30,30,30,30,30,30,30,30,30],
+  'Dirt in the Eye':[25,25,25,25,25,25,25,25,25],
+  'Thieves Cant':[15,15,15,15,15,15,15,15,15],
+  // Scholar Frag
+  'Combat Wizardry':[50,50,50,50,50,50,50,50,50],
+  'Harvest':[35,35,35,35,35,35,35,35,35],
+  'Refocus':[30,30,30,30,30,30,30,30,30],
+  'Spell Parry':[40,40,40,40,40,40,40,40,40],
+  'Spell Switch':[35,35,35,35,35,35,35,35,35],
+  'Spell Versatility':[50,50,50,50,50,50,50,50,50],
+};
+
+// Occupational ability costs per occupation
+const GEN_OCC_ABILITIES = {
+  Mercenary: [{name:'Hamstring',cp:30,minLevel:3},{name:'Head-Butt',cp:60,minLevel:6},{name:'Dismember',cp:90,minLevel:9},{name:"Razor's Edge",cp:120,minLevel:12}],
+  Ranger:    [{name:'Detoxify',cp:30,minLevel:3},{name:'Trailblazing',cp:60,minLevel:6},{name:"Nature's Grasp",cp:90,minLevel:9},{name:'Call of the Hunt',cp:120,minLevel:12}],
+  Templar:   [{name:'Burn Slot',cp:30,minLevel:3},{name:'Scroll Harvest',cp:60,minLevel:6},{name:'Weapon Break',cp:90,minLevel:9},{name:'Weapon Conduit',cp:120,minLevel:12}],
+  Nightblade:[{name:'Feint',cp:30,minLevel:3},{name:'Duplicate Key',cp:60,minLevel:6},{name:'Dim',cp:90,minLevel:9},{name:'Passwall',cp:120,minLevel:12}],
+  Assassin:  [{name:'Shiv',cp:30,minLevel:3},{name:'Silent Strike',cp:60,minLevel:6},{name:'Spirit Sever',cp:90,minLevel:9},{name:'Penetration',cp:120,minLevel:12}],
+  Wytchhunter:[{name:'Wytch Mark / Opposed Sphere',cp:30,minLevel:3},{name:'Twist of the Tongue',cp:60,minLevel:6},{name:'Karmic Ricochet',cp:90,minLevel:9},{name:'Counter Magic',cp:120,minLevel:12}],
+  Mage:      [{name:'Identify Magic Item',cp:30,minLevel:3},{name:'Mana Harvest',cp:60,minLevel:6},{name:'Create Familiar',cp:90,minLevel:9},{name:'Power Nexus',cp:120,minLevel:12}],
+  Druid:     [{name:'Create Grove',cp:30,minLevel:3},{name:'Forest Meld',cp:60,minLevel:6},{name:'Totem',cp:90,minLevel:9},{name:'Henge',cp:120,minLevel:12}],
+  Bard:      [{name:'Song of Aversion',cp:30,minLevel:3},{name:'Song of Love',cp:60,minLevel:6},{name:'Song of Intermission',cp:90,minLevel:9},{name:'Song of Heroism',cp:120,minLevel:12}]
+};
+
+// Sphere preferences per occupation
+const GEN_SPHERE_PREF = {
+  Mage:'Psionics', Druid:'Nature', Bard:'Psionics',
+  Wytchhunter:'Wytchcraft', Templar:'Light', Ranger:'Nature',
+  Nightblade:'Wytchcraft', Mercenary:null, Assassin:null
+};
+
+// Combat skill pools: {name, weight, prereqs[], primary classes[]}
+// primary = class gets 3x weight multiplier
+const GEN_COMBAT_POOL = [
+  // ── WARRIOR SKILLS ─────────────────────────────────────
+  {name:'Weapon Group Proficiency: Medium', weight:10, prereqs:[], primary:['warrior','rogue','scholar']},
+  {name:'Weapon Group Proficiency: Large',  weight:6,  prereqs:[], primary:['warrior']},
+  {name:'Weapon Specific Proficiency: Exotic', weight:5, prereqs:[], primary:['warrior','rogue']},
+  {name:'Shield',         weight:7, prereqs:[], primary:['warrior','templar']},
+  {name:'Heavy Armour',   weight:7, prereqs:[], primary:['warrior']},
+  {name:'Self Mutilate',  weight:6, prereqs:[], primary:['warrior','rogue','scholar']},
+  {name:'Ambidexterity',  weight:5, prereqs:[], primary:['warrior','rogue']},
+  {name:'Florentine',     weight:4, prereqs:['Ambidexterity'], primary:['warrior','rogue']},
+  {name:'Flurry of Blows',weight:8, prereqs:[], primary:['warrior']},
+  {name:'Specialization +1: Weapon Specific', weight:9, prereqs:['Weapon Group Proficiency: Medium'], primary:['warrior','rogue']},
+  {name:'Specialization +1: Weapon Group',    weight:7, prereqs:['Weapon Group Proficiency: Medium'], primary:['warrior']},
+  {name:'Slay/Parry',     weight:9, prereqs:['Specialization +1: Weapon Specific'], primary:['warrior']},
+  {name:'Slay/Parry: Master', weight:7, prereqs:['Specialization +1: Weapon Group'], primary:['warrior']},
+  {name:'Slay/Parry: Subsequent', weight:6, prereqs:['Slay/Parry'], primary:['warrior']},
+  // ── ROGUE SKILLS ───────────────────────────────────────
+  {name:'Critical +2: Specific', weight:10, prereqs:['Weapon Group Proficiency: Medium'], primary:['rogue','assassin','nightblade']},
+  {name:'Critical +2: Group',    weight:8,  prereqs:['Weapon Group Proficiency: Medium'], primary:['rogue']},
+  {name:'Dodge',                 weight:9,  prereqs:['Critical +2: Specific'], primary:['rogue']},
+  {name:'Dodge: Additional',     weight:7,  prereqs:['Dodge','Critical +2: Specific'], primary:['rogue']},
+  {name:'Execute',               weight:9,  prereqs:['Critical +2: Specific'], primary:['rogue']},
+  {name:'Execute: Master',       weight:7,  prereqs:['Critical +2: Group'], primary:['rogue']},
+  {name:'Execute: Subsequent',   weight:6,  prereqs:['Execute'], primary:['rogue']},
+  {name:'Garrotte',              weight:7,  prereqs:[], primary:['rogue','assassin']},
+  {name:'Vital Blow',            weight:8,  prereqs:[], primary:['rogue']},
+  {name:'Sap',                   weight:5,  prereqs:[], primary:['rogue']},
+  // ── SCHOLAR SKILLS ──────────────────────────────────────
+  {name:'Read & Write',          weight:10, prereqs:[], primary:['scholar']},
+  {name:'Read Magic',            weight:10, prereqs:['Read & Write'], primary:['scholar']},
+  {name:'Read Magic: Advanced',  weight:8,  prereqs:['Read Magic'], primary:['scholar']},
+  {name:'Mysticism',             weight:4,  prereqs:[], primary:['scholar']},
+  {name:'Elemental Attunement',  weight:7,  prereqs:[], primary:['scholar','mage','druid']},
+  {name:'Necromantic Arts',      weight:4,  prereqs:[], primary:['scholar']},
+  {name:'Demonic/Angelic Arts',  weight:4,  prereqs:[], primary:['scholar']},
+  // ── WARRIOR FRAG ──────────────────────────────────────
+  {name:'Trip',          weight:7, prereqs:[], primary:['warrior','mercenary']},
+  {name:'Cripple',       weight:6, prereqs:[], primary:['warrior']},
+  {name:'Decapitate',    weight:7, prereqs:['Slay/Parry'], primary:['warrior']},
+  {name:'Disembowel',    weight:6, prereqs:['Specialization +1: Weapon Specific'], primary:['warrior']},
+  {name:'Whirlwind of Blows', weight:7, prereqs:['Flurry of Blows'], primary:['warrior']},
+  {name:'Battlefield Repair', weight:2, prereqs:[], primary:['warrior']},
+  // ── ROGUE FRAG ───────────────────────────────────────
+  {name:'Riposte',       weight:7, prereqs:[], primary:['rogue']},
+  {name:'Sucker Punch',  weight:6, prereqs:[], primary:['rogue']},
+  {name:'Tumble',        weight:6, prereqs:[], primary:['rogue']},
+  {name:'Escape',        weight:5, prereqs:[], primary:['rogue']},
+  {name:'Blindfighter',  weight:5, prereqs:[], primary:['rogue']},
+  {name:'Dirt in the Eye',weight:5,prereqs:[], primary:['rogue','warrior']},
+  // ── SCHOLAR FRAG ─────────────────────────────────────
+  {name:'Combat Wizardry',weight:9, prereqs:['Self Mutilate'], primary:['scholar']},
+  {name:'Harvest',        weight:6, prereqs:[], primary:['scholar']},
+  {name:'Refocus',        weight:6, prereqs:[], primary:['scholar']},
+  {name:'Spell Parry',    weight:6, prereqs:[], primary:['scholar']},
+  {name:'Spell Switch',   weight:5, prereqs:[], primary:['scholar']},
+];
+
+// ── Main generator ────────────────────────────────────
+function generateMonsterBuild(occupation, level) {
+  var cls      = GEN_OCC_CLASS[occupation] || 'warrior';
+  var occIdx   = GEN_OCC_IDX[occupation] || 0;
+  var totalCP  = GEN_LEVEL_CP[Math.min(level, 20)] || 2050;
+  var maxCirc  = Math.min(9, GEN_MAX_CIRCLES[Math.min(level, 20)] || 9);
+  var remaining = totalCP;
+  var selected  = [];
+  var selectedNames = {};
+
+  function getCost(skillName) {
+    var costs = GEN_SKILL_COSTS[skillName];
+    if (!costs) return 9999;
+    return costs[occIdx] || costs[0] || 9999;
+  }
+
+  function canAfford(cost) { return remaining >= cost; }
+
+  function buy(name, cost, note, extra) {
+    if (selectedNames[name]) return false;
+    if (!canAfford(cost)) return false;
+    remaining -= cost;
+    selectedNames[name] = true;
+    selected.push(Object.assign({name:name, cost:cost, note:note||''}, extra||{}));
+    return true;
+  }
+
+  function buyPrereqs(prereqs) {
+    for (var i = 0; i < prereqs.length; i++) {
+      var p = prereqs[i];
+      if (!selectedNames[p]) {
+        var pc = getCost(p);
+        if (canAfford(pc)) {
+          buy(p, pc, 'Prerequisite');
+        } else {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // ── PHASE 1: Scholar — buy Read & Write, Read Magic, Read Magic: Advanced, then sphere up to max circles ──
+  if (cls === 'scholar') {
+    var rwCost = getCost('Read & Write');
+    if (canAfford(rwCost)) buy('Read & Write', rwCost, 'Magic prerequisite');
+
+    var rmCost = getCost('Read Magic');
+    if (selectedNames['Read & Write'] && canAfford(rmCost)) buy('Read Magic', rmCost, 'Magic prerequisite');
+
+    // Read Magic: Advanced — buy if we can afford it (enables circles 5-9)
+    var rmaCost = getCost('Read Magic: Advanced');
+    if (selectedNames['Read Magic'] && canAfford(rmaCost)) buy('Read Magic: Advanced', rmaCost, 'Magic prerequisite');
+
+    // Buy sphere circles up to maxCirc or until CP runs out
+    var prefSphere = GEN_SPHERE_PREF[occupation];
+    if (prefSphere && selectedNames['Read Magic']) {
+      var sphereCost = 0;
+      var circlesBought = 0;
+      for (var c = 1; c <= maxCirc; c++) {
+        var circCost = GEN_SPELL_LEVEL_COSTS[c-1] ? GEN_SPELL_LEVEL_COSTS[c-1][occIdx] : 30;
+        if (canAfford(circCost)) {
+          remaining -= circCost;
+          sphereCost += circCost;
+          circlesBought++;
+        } else {
+          break;
+        }
+      }
+      if (circlesBought > 0) {
+        selected.push({
+          name: 'Sphere: ' + prefSphere,
+          cost: sphereCost,
+          note: 'Sphere purchase',
+          sphere: prefSphere,
+          circles: circlesBought
+        });
+        selectedNames['Sphere: ' + prefSphere] = true;
+      }
+    }
+  }
+
+  // ── PHASE 2: Weighted selection from combat skills + occupationals combined ──
+  // Add occupational abilities into the pool with appropriate weight
+  var occAbils = GEN_OCC_ABILITIES[occupation] || [];
+
+  var pool = GEN_COMBAT_POOL.filter(function(sk) {
+    return !selectedNames[sk.name];
+  }).map(function(sk) {
+    var isPrimary = sk.primary && sk.primary.indexOf(cls) !== -1;
+    return Object.assign({}, sk, {
+      effWeight: sk.weight * (isPrimary ? 3 : 1),
+      isOcc: false
+    });
+  });
+
+  // Add occupational abilities as pool entries (weight 8, primary class equivalent)
+  occAbils.forEach(function(ab) {
+    if (ab.minLevel <= level && !selectedNames[ab.name]) {
+      pool.push({
+        name: ab.name,
+        weight: 8,
+        effWeight: 24, // treated as primary-weighted (8 * 3)
+        prereqs: [],
+        primary: [cls],
+        isOcc: true,
+        occCost: ab.cp,
+        note: 'Occupational Ability'
+      });
+    }
+  });
+
+  var attempts = 0;
+  while (remaining > 0 && attempts < 600) {
+    attempts++;
+
+    var eligible = pool.filter(function(sk) {
+      if (selectedNames[sk.name]) return false;
+      var cost = sk.isOcc ? sk.occCost : getCost(sk.name);
+      if (!cost || !canAfford(cost)) return false;
+      for (var i = 0; i < sk.prereqs.length; i++) {
+        if (!selectedNames[sk.prereqs[i]]) {
+          var pc = getCost(sk.prereqs[i]);
+          if (!canAfford(cost + pc)) return false;
+        }
+      }
+      return true;
+    });
+
+    if (!eligible.length) break;
+
+    var totalW = eligible.reduce(function(s, sk) { return s + sk.effWeight; }, 0);
+    var rand = Math.random() * totalW;
+    var chosen = eligible[eligible.length-1];
+    for (var i = 0; i < eligible.length; i++) {
+      rand -= eligible[i].effWeight;
+      if (rand <= 0) { chosen = eligible[i]; break; }
+    }
+
+    var prereqOk = buyPrereqs(chosen.prereqs);
+    if (!prereqOk) {
+      pool = pool.filter(function(sk){ return sk.name !== chosen.name; });
+      continue;
+    }
+
+    var cost = chosen.isOcc ? chosen.occCost : getCost(chosen.name);
+    var noteLabel = chosen.isOcc ? 'Occupational Ability'
+      : (chosen.primary && chosen.primary.indexOf(cls) !== -1
+          ? cls.charAt(0).toUpperCase() + cls.slice(1) + ' Skill'
+          : 'Cross-class Skill');
+
+    if (!buy(chosen.name, cost, noteLabel)) {
+      pool = pool.filter(function(sk){ return sk.name !== chosen.name; });
+    } else {
+      pool = pool.filter(function(sk){ return sk.name !== chosen.name; });
+    }
+  }
+
+  return {
+    occupation: occupation,
+    cls: cls,
+    level: level,
+    totalCP: totalCP,
+    spent: totalCP - remaining,
+    remaining: remaining,
+    maxCircles: maxCirc,
+    selections: selected
+  };
+}
+
+
+
+
 const ALL_ITEMS = [
   ...MONSTER_ABILITIES.map(function(a){ return Object.assign({},a,{_type:'monster'}); }),
   ...SB_SPELLS.map(function(s){ return Object.assign({},s,{_type:'spell',cat:s.sphere}); }),
@@ -1694,6 +2107,110 @@ document.addEventListener('mousedown', function(e) {
     closeDropdown();
   }
 });
+
+// ── Generator UI ──
+function runGenerator() {
+  var occ   = document.getElementById('gen-occ').value;
+  var level = parseInt(document.getElementById('gen-level').value) || 5;
+  level = Math.max(1, Math.min(20, level));
+
+  var result = generateMonsterBuild(occ, level);
+  var container = document.getElementById('gen-results');
+
+  if (!result.selections.length) {
+    container.innerHTML = '<div class="gen-empty">No results generated.</div>';
+    return;
+  }
+
+  var clsLabel = result.cls.charAt(0).toUpperCase() + result.cls.slice(1);
+  var html = '<div class="gen-result-header">'
+    + '<span class="gen-result-title">' + occ + ' (' + clsLabel + ') &mdash; Level ' + level + '</span>'
+    + '<span class="gen-result-meta">'
+    + result.spent + ' CP spent of ' + result.totalCP + ' available'
+    + ' &bull; ' + result.remaining + ' CP unspent'
+    + ' &bull; Max spell circle: ' + result.maxCircles
+    + '</span>'
+    + '</div>';
+
+  var spheres = result.selections.filter(function(s){ return s.sphere; });
+  var prereqs = result.selections.filter(function(s){ return !s.sphere && (s.note === 'Magic prerequisite' || s.note === 'Prerequisite'); });
+  var occ_abs = result.selections.filter(function(s){ return !s.sphere && s.note === 'Occupational Ability'; });
+  var rest    = result.selections.filter(function(s){ return !s.sphere && s.note !== 'Magic prerequisite' && s.note !== 'Prerequisite' && s.note !== 'Occupational Ability'; });
+
+  function itemHtml(sk) {
+    var isSphere = !!sk.sphere;
+    var isPrereq = sk.note === 'Magic prerequisite' || sk.note === 'Prerequisite';
+    var cls2 = isSphere ? ' is-sphere' : '';
+    if (isPrereq) cls2 += ' is-prereq';
+    var circleHtml = sk.circles
+      ? '<div class="gen-item-circles">Circles 1 &ndash; ' + sk.circles + ' &nbsp;|&nbsp; Max available: ' + result.maxCircles + '</div>'
+      : '';
+    var costBadge = '<span class="gen-item-cost">' + sk.cost + ' CP</span>';
+    var addBtn = '<button class="gen-add-btn" onclick="genAddToBuilder('
+      + JSON.stringify(sk.name) + ','
+      + JSON.stringify(sk.sphere||'') + ','
+      + (sk.circles||0) + ')">+ Add to Builder</button>';
+    return '<div class="gen-item' + cls2 + '">'
+      + '<div class="gen-item-header">'
+      + '<span class="gen-item-name">' + sk.name + (sk.circles ? ' (Circles 1-' + sk.circles + ')' : '') + '</span>'
+      + costBadge
+      + '</div>'
+      + (sk.note && !isSphere ? '<span class="gen-item-note">' + sk.note + '</span>' : '')
+      + circleHtml
+      + addBtn
+      + '</div>';
+  }
+
+  if (prereqs.length) html += '<div class="gen-section-label">Prerequisites</div>' + prereqs.map(itemHtml).join('');
+  if (spheres.length)  html += '<div class="gen-section-label">Sphere Purchase</div>'  + spheres.map(itemHtml).join('');
+  if (occ_abs.length)  html += '<div class="gen-section-label">Occupational Abilities</div>' + occ_abs.map(itemHtml).join('');
+  if (rest.length)     html += '<div class="gen-section-label">Combat Skills</div>'    + rest.map(itemHtml).join('');
+
+  container.innerHTML = html;
+}
+
+
+function genAddToBuilder(skillName, sphereName, circles) {
+  // Find the item in ALL_ITEMS
+  var item = null;
+
+  if (sphereName && circles > 0) {
+    // Add the sphere as multiple rows (one per circle) or as a note
+    // Find any spell from this sphere at circle 1 to use as a reference item
+    item = ALL_ITEMS.find(function(i){ return i._type === 'spell' && i.cat === sphereName && i.level === 1; });
+    if (item) {
+      // Add the sphere label as a skill entry note
+      var sphereItem = {
+        name: 'Sphere: ' + sphereName + ' (Circles 1-' + circles + ')',
+        cat: sphereName + ' Sphere',
+        desc: 'Sphere of ' + sphereName + ' — circles 1 through ' + circles + ' purchased. Max circle at this level: ' + maxCirclesAtLevel(parseInt(document.getElementById('gen-level').value||5)),
+        incant: '',
+        _type: 'skill'
+      };
+      addRow();
+      var id = nextId - 1;
+      setRowItem(id, sphereItem);
+      var inp = document.getElementById('search-' + id);
+      if (inp) inp.value = sphereItem.name;
+      updateSummary();
+      return;
+    }
+  }
+
+  // Regular skill — find in ALL_ITEMS
+  item = ALL_ITEMS.find(function(i){ return i.name === skillName; });
+  if (!item) {
+    // Create a stub
+    item = {name: skillName, cat: 'Skill', desc: '', incant: '', _type: 'skill'};
+  }
+
+  addRow();
+  var id = nextId - 1;
+  setRowItem(id, item);
+  var inp2 = document.getElementById('search-' + id);
+  if (inp2) inp2.value = item.name;
+  updateSummary();
+}
 
 // ── Init ──
 addRow();
