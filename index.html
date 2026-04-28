@@ -1456,14 +1456,14 @@ const GEN_SKILL_COSTS = {
 // Occupational ability costs per occupation
 const GEN_OCC_ABILITIES = {
   Mercenary: [{name:'Hamstring',cp:30,minLevel:3},{name:'Head-Butt',cp:60,minLevel:6},{name:'Dismember',cp:90,minLevel:9},{name:"Razor's Edge",cp:120,minLevel:12}],
-  Ranger:    [{name:'Detoxify',cp:30,minLevel:3},{name:'Trailblazing',cp:60,minLevel:6},{name:"Nature's Grasp",cp:90,minLevel:9},{name:'Call of the Hunt',cp:120,minLevel:12}],
+  Ranger:    [{name:"Nature's Grasp",cp:90,minLevel:9},{name:'Call of the Hunt',cp:120,minLevel:12}],
   Templar:   [{name:'Burn Slot',cp:30,minLevel:3},{name:'Scroll Harvest',cp:60,minLevel:6},{name:'Weapon Break',cp:90,minLevel:9},{name:'Weapon Conduit',cp:120,minLevel:12}],
-  Nightblade:[{name:'Feint',cp:30,minLevel:3},{name:'Duplicate Key',cp:60,minLevel:6},{name:'Dim',cp:90,minLevel:9},{name:'Passwall',cp:120,minLevel:12}],
+  Nightblade:[{name:'Feint',cp:30,minLevel:3},{name:'Dim',cp:90,minLevel:9}],
   Assassin:  [{name:'Shiv',cp:30,minLevel:3},{name:'Silent Strike',cp:60,minLevel:6},{name:'Spirit Sever',cp:90,minLevel:9},{name:'Penetration',cp:120,minLevel:12}],
   Wytchhunter:[{name:'Wytch Mark / Opposed Sphere',cp:30,minLevel:3},{name:'Twist of the Tongue',cp:60,minLevel:6},{name:'Karmic Ricochet',cp:90,minLevel:9},{name:'Counter Magic',cp:120,minLevel:12}],
-  Mage:      [{name:'Identify Magic Item',cp:30,minLevel:3},{name:'Mana Harvest',cp:60,minLevel:6},{name:'Create Familiar',cp:90,minLevel:9},{name:'Power Nexus',cp:120,minLevel:12}],
-  Druid:     [{name:'Create Grove',cp:30,minLevel:3},{name:'Forest Meld',cp:60,minLevel:6},{name:'Totem',cp:90,minLevel:9},{name:'Henge',cp:120,minLevel:12}],
-  Bard:      [{name:'Song of Aversion',cp:30,minLevel:3},{name:'Song of Love',cp:60,minLevel:6},{name:'Song of Intermission',cp:90,minLevel:9},{name:'Song of Heroism',cp:120,minLevel:12}]
+  Mage:      [{name:'Mana Harvest',cp:60,minLevel:6}],
+  Druid:     [{name:'Totem',cp:90,minLevel:9}],
+  Bard:      [{name:'Song of Aversion',cp:30,minLevel:3},{name:'Song of Love',cp:60,minLevel:6},{name:'Song of Heroism',cp:120,minLevel:12}]
 };
 
 // Sphere preferences per occupation
@@ -1555,30 +1555,27 @@ const GEN_COMBAT_POOL = [
   {name:'Read & Write',          weight:10, prereqs:[], primary:['scholar']},
   {name:'Read Magic',            weight:10, prereqs:['Read & Write'], primary:['scholar']},
   {name:'Read Magic: Advanced',  weight:8,  prereqs:['Read Magic'], primary:['scholar']},
-  {name:'Mysticism',             weight:4,  prereqs:[], primary:['scholar']},
   {name:'Elemental Attunement',  weight:7,  prereqs:[], primary:['scholar','mage','druid']},
-  {name:'Necromantic Arts',      weight:4,  prereqs:[], primary:['scholar']},
-  {name:'Demonic/Angelic Arts',  weight:4,  prereqs:[], primary:['scholar']},
   // ── WARRIOR FRAG — class-locked to warrior only ──
   {name:'Trip',               weight:7, prereqs:[], primary:['warrior'], classLocked:true},
   {name:'Cripple',            weight:6, prereqs:[], primary:['warrior'], classLocked:true},
   {name:'Decapitate',         weight:7, prereqs:['Slay/Parry'], primary:['warrior'], classLocked:true},
   {name:'Disembowel',         weight:6, prereqs:['Specialization +1: Weapon Specific'], primary:['warrior'], classLocked:true},
   {name:'Whirlwind of Blows', weight:7, prereqs:['Flurry of Blows'], primary:['warrior'], classLocked:true},
-  {name:'Battlefield Repair', weight:1, prereqs:[], primary:['warrior'], classLocked:true},
+
   // ── ROGUE FRAG — class-locked to rogue only ──
   {name:'Riposte',        weight:7, prereqs:[], primary:['rogue'], classLocked:true},
   {name:'Sucker Punch',   weight:6, prereqs:[], primary:['rogue'], classLocked:true},
   {name:'Tumble',         weight:2, prereqs:[], primary:['rogue'], classLocked:true},
-  {name:'Escape',         weight:1, prereqs:[], primary:['rogue'], classLocked:true},
-  {name:'Blindfighter',   weight:1, prereqs:[], primary:['rogue'], classLocked:true},
+
+
   {name:'Dirt in the Eye',weight:2, prereqs:[], primary:['warrior'], classLocked:true},
   // ── SCHOLAR FRAG — class-locked to scholar only ──
   {name:'Combat Wizardry',weight:9, prereqs:['Self Mutilate'], primary:['scholar'], classLocked:true},
   {name:'Harvest',        weight:6, prereqs:[], primary:['scholar'], classLocked:true},
   {name:'Refocus',        weight:6, prereqs:[], primary:['scholar'], classLocked:true},
-  {name:'Spell Parry',    weight:2, prereqs:[], primary:['scholar'], classLocked:true},
-  {name:'Spell Switch',   weight:2, prereqs:[], primary:['scholar'], classLocked:true},
+
+
 ];
 
 // ── Main generator ────────────────────────────────────
