@@ -2172,6 +2172,14 @@ function runGenerator() {
   var level = parseInt(document.getElementById('gen-level').value) || 5;
   level = Math.max(1, Math.min(20, level));
 
+  // Clear all existing rows before generating new selections
+  rows = [];
+  nextId = 1;
+  activeDropdown = null;
+  focusedIndex = -1;
+  renderRows();
+  updateSummary();
+
   var result = generateMonsterBuild(occ, level);
   var container = document.getElementById('gen-results');
 
