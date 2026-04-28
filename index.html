@@ -399,7 +399,7 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
       <button class="gen-btn" onclick="runGenerator()">&#127922; Generate</button>
     </div>
     <div class="gen-results" id="gen-results">
-      <div class="gen-empty">Select an occupation, level, and skill count then click Generate.</div>
+      <div class="gen-empty">Select an occupation and level then click Generate.</div>
     </div>
   </div>
 
