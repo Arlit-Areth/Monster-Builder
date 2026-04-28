@@ -1476,18 +1476,67 @@ const GEN_SPHERE_PREF = {
 // Combat skill pools: {name, weight, prereqs[], primary classes[]}
 // primary = class gets 3x weight multiplier
 const GEN_COMBAT_POOL = [
-  // ── WARRIOR SKILLS ─────────────────────────────────────
-  {name:'Weapon Group Proficiency: Medium', weight:10, prereqs:[], primary:['warrior','rogue','scholar']},
-  {name:'Weapon Group Proficiency: Large',  weight:6,  prereqs:[], primary:['warrior']},
-  {name:'Weapon Specific Proficiency: Exotic', weight:5, prereqs:[], primary:['warrior','rogue']},
-  {name:'Shield',         weight:7, prereqs:[], primary:['warrior','templar']},
-  {name:'Heavy Armour',   weight:7, prereqs:[], primary:['warrior']},
+  // ── WEAPON PROFICIENCIES — occupation-thematic weights ────────────────────
+  // Medium weapons: core for all warriors/rogues, lower for scholars
+  {name:'Weapon Group Proficiency: Medium',
+   weight:10, prereqs:[],
+   primary:['warrior','rogue'],          // Mercenary, Ranger, Templar, Nightblade, Wytchhunter get full weight
+   occWeight:{Mercenary:10,Ranger:9,Templar:8,Nightblade:9,Assassin:8,Wytchhunter:7,Mage:4,Druid:5,Bard:6}},
+
+  // Large weapons: Warriors only — rogues/scholars avoid
+  {name:'Weapon Group Proficiency: Large',
+   weight:6, prereqs:[],
+   primary:['warrior'],
+   occWeight:{Mercenary:8,Ranger:6,Templar:7,Nightblade:2,Assassin:1,Wytchhunter:3,Mage:1,Druid:3,Bard:2}},
+
+  // Exotic: Rogues (stiletto), some warriors — scholars light
+  {name:'Weapon Specific Proficiency: Exotic',
+   weight:5, prereqs:[],
+   primary:['rogue','warrior'],
+   occWeight:{Mercenary:4,Ranger:3,Templar:3,Nightblade:9,Assassin:10,Wytchhunter:5,Mage:4,Druid:3,Bard:5}},
+
+  // Shield: Warrior/Templar core; rogues and scholars low
+  {name:'Shield',
+   weight:7, prereqs:[],
+   primary:['warrior'],
+   occWeight:{Mercenary:8,Ranger:5,Templar:10,Nightblade:2,Assassin:1,Wytchhunter:5,Mage:2,Druid:4,Bard:4}},
+
+  // Heavy Armour: Warriors yes; rogues and scholars no
+  {name:'Heavy Armour',
+   weight:7, prereqs:[],
+   primary:['warrior'],
+   occWeight:{Mercenary:8,Ranger:5,Templar:9,Nightblade:2,Assassin:1,Wytchhunter:3,Mage:1,Druid:2,Bard:2}},
+
+  // Self Mutilate: universal prerequisite for Combat Wizardry
   {name:'Self Mutilate',  weight:6, prereqs:[], primary:['warrior','rogue','scholar']},
-  {name:'Ambidexterity',  weight:5, prereqs:[], primary:['warrior','rogue']},
-  {name:'Florentine',     weight:4, prereqs:['Ambidexterity'], primary:['warrior','rogue']},
+
+  // Ambidexterity: Rogues and dual-wield warriors; scholars rarely
+  {name:'Ambidexterity',
+   weight:5, prereqs:[],
+   primary:['rogue','warrior'],
+   occWeight:{Mercenary:5,Ranger:4,Templar:3,Nightblade:7,Assassin:8,Wytchhunter:5,Mage:2,Druid:2,Bard:3}},
+
+  // Florentine: Dual-wield specialists — rogues and some warriors
+  {name:'Florentine',
+   weight:4, prereqs:['Ambidexterity'],
+   primary:['rogue','warrior'],
+   occWeight:{Mercenary:4,Ranger:3,Templar:3,Nightblade:7,Assassin:7,Wytchhunter:4,Mage:2,Druid:2,Bard:3}},
+
+  // Flurry of Blows: Warriors primarily
   {name:'Flurry of Blows',weight:8, prereqs:[], primary:['warrior']},
-  {name:'Specialization +1: Weapon Specific', weight:9, prereqs:['Weapon Group Proficiency: Medium'], primary:['warrior','rogue']},
-  {name:'Specialization +1: Weapon Group',    weight:7, prereqs:['Weapon Group Proficiency: Medium'], primary:['warrior']},
+
+  // Specialization: core damage multiplier — rogues + warriors
+  {name:'Specialization +1: Weapon Specific',
+   weight:9, prereqs:['Weapon Group Proficiency: Medium'],
+   primary:['warrior','rogue'],
+   occWeight:{Mercenary:9,Ranger:8,Templar:8,Nightblade:9,Assassin:9,Wytchhunter:7,Mage:4,Druid:5,Bard:5}},
+
+  {name:'Specialization +1: Weapon Group',
+   weight:7, prereqs:['Weapon Group Proficiency: Medium'],
+   primary:['warrior'],
+   occWeight:{Mercenary:8,Ranger:7,Templar:8,Nightblade:4,Assassin:3,Wytchhunter:5,Mage:2,Druid:3,Bard:3}},
+
+  // Slay/Parry: Warriors core, others low
   {name:'Slay/Parry',     weight:9, prereqs:['Specialization +1: Weapon Specific'], primary:['warrior']},
   {name:'Slay/Parry: Master', weight:7, prereqs:['Specialization +1: Weapon Group'], primary:['warrior']},
   {name:'Slay/Parry: Subsequent', weight:6, prereqs:['Slay/Parry'], primary:['warrior']},
@@ -1510,26 +1559,26 @@ const GEN_COMBAT_POOL = [
   {name:'Elemental Attunement',  weight:7,  prereqs:[], primary:['scholar','mage','druid']},
   {name:'Necromantic Arts',      weight:4,  prereqs:[], primary:['scholar']},
   {name:'Demonic/Angelic Arts',  weight:4,  prereqs:[], primary:['scholar']},
-  // ── WARRIOR FRAG ──────────────────────────────────────
-  {name:'Trip',          weight:7, prereqs:[], primary:['warrior','mercenary']},
-  {name:'Cripple',       weight:6, prereqs:[], primary:['warrior']},
-  {name:'Decapitate',    weight:7, prereqs:['Slay/Parry'], primary:['warrior']},
-  {name:'Disembowel',    weight:6, prereqs:['Specialization +1: Weapon Specific'], primary:['warrior']},
-  {name:'Whirlwind of Blows', weight:7, prereqs:['Flurry of Blows'], primary:['warrior']},
-  {name:'Battlefield Repair', weight:2, prereqs:[], primary:['warrior']},
-  // ── ROGUE FRAG ───────────────────────────────────────
-  {name:'Riposte',       weight:7, prereqs:[], primary:['rogue']},
-  {name:'Sucker Punch',  weight:6, prereqs:[], primary:['rogue']},
-  {name:'Tumble',        weight:6, prereqs:[], primary:['rogue']},
-  {name:'Escape',        weight:5, prereqs:[], primary:['rogue']},
-  {name:'Blindfighter',  weight:5, prereqs:[], primary:['rogue']},
-  {name:'Dirt in the Eye',weight:5,prereqs:[], primary:['rogue','warrior']},
-  // ── SCHOLAR FRAG ─────────────────────────────────────
-  {name:'Combat Wizardry',weight:9, prereqs:['Self Mutilate'], primary:['scholar']},
-  {name:'Harvest',        weight:6, prereqs:[], primary:['scholar']},
-  {name:'Refocus',        weight:6, prereqs:[], primary:['scholar']},
-  {name:'Spell Parry',    weight:6, prereqs:[], primary:['scholar']},
-  {name:'Spell Switch',   weight:5, prereqs:[], primary:['scholar']},
+  // ── WARRIOR FRAG — damage/debuff frags kept high, utility dropped ──
+  {name:'Trip',               weight:7, prereqs:[], primary:['warrior','mercenary']},  // 1 Body + mobility debuff
+  {name:'Cripple',            weight:6, prereqs:[], primary:['warrior']},              // 1 Body + limb debuff
+  {name:'Decapitate',         weight:7, prereqs:['Slay/Parry'], primary:['warrior']}, // instant Death Count
+  {name:'Disembowel',         weight:6, prereqs:['Specialization +1: Weapon Specific'], primary:['warrior']}, // Bleed/death timer
+  {name:'Whirlwind of Blows', weight:7, prereqs:['Flurry of Blows'], primary:['warrior']}, // +5 damage
+  {name:'Battlefield Repair', weight:1, prereqs:[], primary:['warrior']},              // utility only
+  // ── ROGUE FRAG — only damage-dealing or damage-reflecting frags stay high ──
+  {name:'Riposte',       weight:7, prereqs:[], primary:['rogue']},     // reflects attack damage
+  {name:'Sucker Punch',  weight:6, prereqs:[], primary:['rogue']},     // 1 Body + stun
+  {name:'Tumble',        weight:2, prereqs:[], primary:['rogue']},     // halves incoming damage — utility/survival
+  {name:'Escape',        weight:1, prereqs:[], primary:['rogue']},     // utility escape, no damage
+  {name:'Blindfighter',  weight:1, prereqs:[], primary:['rogue']},     // resist blind, no damage
+  {name:'Dirt in the Eye',weight:2,prereqs:[], primary:['rogue','warrior']}, // blinds target, no direct damage
+  // ── SCHOLAR FRAG — keep damage-enabling frags, drop pure utility ──
+  {name:'Combat Wizardry',weight:9, prereqs:['Self Mutilate'], primary:['scholar']}, // enables casting through damage
+  {name:'Harvest',        weight:6, prereqs:[], primary:['scholar']},  // regains spell after defence
+  {name:'Refocus',        weight:6, prereqs:[], primary:['scholar']},  // regains missed spell
+  {name:'Spell Parry',    weight:2, prereqs:[], primary:['scholar']},  // counters incoming spell, no direct damage
+  {name:'Spell Switch',   weight:2, prereqs:[], primary:['scholar']},  // utility versatility, no direct damage
 ];
 
 // ── Main generator ────────────────────────────────────
@@ -1621,9 +1670,18 @@ function generateMonsterBuild(occupation, level) {
   var pool = GEN_COMBAT_POOL.filter(function(sk) {
     return !selectedNames[sk.name];
   }).map(function(sk) {
+    // Use occupation-specific weight if available, otherwise fall back to class-based weight
+    var baseWeight = (sk.occWeight && sk.occWeight[occupation] !== undefined)
+      ? sk.occWeight[occupation]
+      : sk.weight;
     var isPrimary = sk.primary && sk.primary.indexOf(cls) !== -1;
+    // If occWeight is defined, use it directly (already encodes occupation preference)
+    // If not, apply the standard 3x primary multiplier
+    var effWeight = sk.occWeight
+      ? baseWeight
+      : baseWeight * (isPrimary ? 3 : 1);
     return Object.assign({}, sk, {
-      effWeight: sk.weight * (isPrimary ? 3 : 1),
+      effWeight: effWeight,
       isOcc: false
     });
   });
@@ -2122,6 +2180,12 @@ function runGenerator() {
     return;
   }
 
+  // ── Auto-add all selections to the builder ──
+  result.selections.forEach(function(sk) {
+    genAddToBuilder(sk.name, sk.sphere || '', sk.circles || 0);
+  });
+
+  // ── Display summary of what was added ──
   var clsLabel = result.cls.charAt(0).toUpperCase() + result.cls.slice(1);
   var html = '<div class="gen-result-header">'
     + '<span class="gen-result-title">' + occ + ' (' + clsLabel + ') &mdash; Level ' + level + '</span>'
@@ -2146,10 +2210,6 @@ function runGenerator() {
       ? '<div class="gen-item-circles">Circles 1 &ndash; ' + sk.circles + ' &nbsp;|&nbsp; Max available: ' + result.maxCircles + '</div>'
       : '';
     var costBadge = '<span class="gen-item-cost">' + sk.cost + ' CP</span>';
-    var addBtn = '<button class="gen-add-btn" onclick="genAddToBuilder('
-      + JSON.stringify(sk.name) + ','
-      + JSON.stringify(sk.sphere||'') + ','
-      + (sk.circles||0) + ')">+ Add to Builder</button>';
     return '<div class="gen-item' + cls2 + '">'
       + '<div class="gen-item-header">'
       + '<span class="gen-item-name">' + sk.name + (sk.circles ? ' (Circles 1-' + sk.circles + ')' : '') + '</span>'
@@ -2157,7 +2217,6 @@ function runGenerator() {
       + '</div>'
       + (sk.note && !isSphere ? '<span class="gen-item-note">' + sk.note + '</span>' : '')
       + circleHtml
-      + addBtn
       + '</div>';
   }
 
