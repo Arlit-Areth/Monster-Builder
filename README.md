@@ -2877,7 +2877,9 @@ updateSummary();
       <div class="gen-empty">Select an occupation and level then click Generate.
       </div>
     </div>
-  </div>
+      </div><!-- /tool-modal-body -->
+    </div><!-- /tool-modal -->
+  </div><!-- /tool-modal-backdrop -->
 
   <!-- Optimized Build Modal -->
   <div class="tool-modal-backdrop" id="opt-modal" onclick="closeModalBackdrop(event,'opt-modal')">
@@ -2945,7 +2947,9 @@ updateSummary();
       <div class="gen-empty">Select an occupation and level then click Build.
       </div>
     </div>
-  </div>
+      </div><!-- /tool-modal-body -->
+    </div><!-- /tool-modal -->
+  </div><!-- /tool-modal-backdrop -->
 
 </body>
 </html>
