@@ -316,6 +316,15 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
   .gen-add-btn:hover { background: var(--color-background-tertiary,var(--color-background-secondary)); }
   .gen-empty { font-size: 13px; color: var(--color-text-tertiary); font-style: italic; text-align: center; padding: 1.5rem 0; }
   .gen-section-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--color-text-tertiary); margin: 10px 0 4px; font-weight: 600; }
+  /* ── Tool Modals ── */
+  .tool-modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; padding:1rem; }
+  .tool-modal-backdrop.open { display:flex; }
+  .tool-modal { background:var(--color-background-primary); border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-lg); width:100%; max-width:640px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.4); }
+  .tool-modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); border-radius:var(--border-radius-lg) var(--border-radius-lg) 0 0; flex-shrink:0; }
+  .tool-modal-title { font-size:13px; font-weight:600; letter-spacing:0.5px; }
+  .tool-modal-close { background:none; border:none; font-size:20px; line-height:1; cursor:pointer; color:var(--color-text-secondary); padding:0 4px; }
+  .tool-modal-close:hover { color:var(--color-text-primary); }
+  .tool-modal-body { padding:1.25rem; overflow-y:auto; flex:1; }
   @media (max-width: 680px) { .gen-inputs { grid-template-columns: 1fr 1fr; } .gen-inputs .gen-btn { grid-column: 1/-1; } }
   @media (max-width: 680px) {
     .main-layout { grid-template-columns: 1fr; }
@@ -374,95 +383,10 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
       <span class="summary-empty-note">No skills, spells, or abilities added yet.</span>
     </div>
   </div>
-  <!-- Random Generator -->
-  <div class="gen-panel">
-    <div class="panel-header"><span class="panel-title">&#127922; Ability Generator</span></div>
-    <div class="gen-inputs">
-      <div class="field-group">
-        <label class="field-label">Occupation</label>
-        <select class="field-input" id="gen-occ">
-          <optgroup label="Warrior">
-            <option>Mercenary</option><option>Ranger</option><option>Templar</option>
-          </optgroup>
-          <optgroup label="Rogue">
-            <option>Nightblade</option><option>Assassin</option><option>Wytchhunter</option>
-          </optgroup>
-          <optgroup label="Scholar">
-            <option>Mage</option><option>Druid</option><option>Bard</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Level</label>
-        <input class="field-input" id="gen-level" type="number" min="1" max="20" value="5">
-      </div>
-      <button class="gen-btn" onclick="runGenerator()">&#127922; Generate</button>
-    </div>
-    <div class="gen-results" id="gen-results">
-      <div class="gen-empty">Select an occupation and level then click Generate.</div>
-    </div>
-  </div>
-
-  <!-- Optimized Builder -->
-  <div class="gen-panel">
-    <div class="panel-header"><span class="panel-title">&#127919; Optimized Build</span></div>
-    <div class="gen-inputs" style="grid-template-columns: 1fr 1fr 1fr 80px auto; flex-wrap:wrap;">
-      <div class="field-group">
-        <label class="field-label">Occupation</label>
-        <select class="field-input" id="opt-occ" oninput="updateOptSphereVisibility()">
-          <optgroup label="Warrior">
-            <option>Mercenary</option><option>Ranger</option><option>Templar</option>
-          </optgroup>
-          <optgroup label="Rogue">
-            <option>Nightblade</option><option>Assassin</option><option>Wytchhunter</option>
-          </optgroup>
-          <optgroup label="Scholar">
-            <option>Mage</option><option>Druid</option><option>Bard</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="field-group" id="opt-sphere-group" style="display:none">
-        <label class="field-label">Sphere</label>
-        <select class="field-input" id="opt-sphere">
-          <option value="Psionics">Psionics</option>
-          <option value="Protections">Protections</option>
-          <option value="Nature">Nature</option>
-          <option value="Healing">Healing</option>
-          <option value="Elemental">Elemental</option>
-          <option value="Necromancy">Necromancy</option>
-          <option value="Sigil">Sigil</option>
-          <option value="Wytchcraft">Wytchcraft</option>
-          <option value="Dark">Dark</option>
-          <option value="Light">Light</option>
-          <option value="Draconic">Draconic</option>
-          <option value="Dredgecraft">Dredgecraft</option>
-        </select>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Vocation (optional)</label>
-        <select class="field-input" id="opt-voc">
-          <option value="">None</option>
-          <optgroup label="Standard">
-            <option>Archer</option><option>Battle Mage</option><option>Blood Reaver</option>
-            <option>Brew Master</option><option>Bounty Hunter</option><option>Conqueror</option>
-            <option>Shaman</option><option>Stalwart</option><option>Swashbuckler</option>
-            <option>Undead Hunter</option>
-          </optgroup>
-          <optgroup label="Favoured">
-            <option>Paladin</option><option>Dread Knight</option><option>Lightweaver</option>
-            <option>Darkweaver</option><option>Dragon Knight</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Level</label>
-        <input class="field-input" id="opt-level" type="number" min="1" max="20" value="5">
-      </div>
-      <button class="gen-btn" onclick="runOptimizedBuild()">&#127919; Build</button>
-    </div>
-    <div class="gen-results" id="opt-results">
-      <div class="gen-empty">Select an occupation and level then click Build.</div>
-    </div>
+  <!-- Generator Buttons -->
+  <div style="display:flex;gap:10px;margin-bottom:1rem;">
+    <button class="gen-btn" onclick="openModal('gen-modal')" style="flex:1;padding:10px;">&#127922; Ability Generator</button>
+    <button class="gen-btn" onclick="openModal('opt-modal')" style="flex:1;padding:10px;">&#127919; Optimized Build</button>
   </div>
 
   <div class="main-layout">
@@ -2700,6 +2624,19 @@ document.addEventListener('mousedown', function(e) {
   }
 });
 
+// ── Modal helpers ──
+function openModal(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.add('open');
+}
+function closeModal(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+function closeModalBackdrop(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
 // ── Generator UI ──
 function runGenerator() {
   var occ   = document.getElementById('gen-occ').value;
@@ -2907,5 +2844,108 @@ function runOptimizedBuild() {
 addRow();
 updateSummary();
 </script>
+  <!-- Ability Generator Modal -->
+  <div class="tool-modal-backdrop" id="gen-modal" onclick="closeModalBackdrop(event,'gen-modal')">
+    <div class="tool-modal">
+      <div class="tool-modal-header">
+        <span class="tool-modal-title">&#127922; Ability Generator</span>
+        <button class="tool-modal-close" onclick="closeModal('gen-modal')">&times;</button>
+      </div>
+      <div class="tool-modal-body">
+    <div class="gen-inputs">
+      <div class="field-group">
+        <label class="field-label">Occupation</label>
+        <select class="field-input" id="gen-occ">
+          <optgroup label="Warrior">
+            <option>Mercenary</option><option>Ranger</option><option>Templar</option>
+          </optgroup>
+          <optgroup label="Rogue">
+            <option>Nightblade</option><option>Assassin</option><option>Wytchhunter</option>
+          </optgroup>
+          <optgroup label="Scholar">
+            <option>Mage</option><option>Druid</option><option>Bard</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Level</label>
+        <input class="field-input" id="gen-level" type="number" min="1" max="20" value="5">
+      </div>
+      <button class="gen-btn" onclick="runGenerator()">&#127922; Generate</button>
+    </div>
+    <div class="gen-results" id="gen-results">
+      <div class="gen-empty">Select an occupation and level then click Generate.
+      </div>
+    </div>
+  </div>
+
+  <!-- Optimized Build Modal -->
+  <div class="tool-modal-backdrop" id="opt-modal" onclick="closeModalBackdrop(event,'opt-modal')">
+    <div class="tool-modal">
+      <div class="tool-modal-header">
+        <span class="tool-modal-title">&#127919; Optimized Build</span>
+        <button class="tool-modal-close" onclick="closeModal('opt-modal')">&times;</button>
+      </div>
+      <div class="tool-modal-body">
+    <div class="gen-inputs" style="grid-template-columns: 1fr 1fr 1fr 80px auto; flex-wrap:wrap;">
+      <div class="field-group">
+        <label class="field-label">Occupation</label>
+        <select class="field-input" id="opt-occ" oninput="updateOptSphereVisibility()">
+          <optgroup label="Warrior">
+            <option>Mercenary</option><option>Ranger</option><option>Templar</option>
+          </optgroup>
+          <optgroup label="Rogue">
+            <option>Nightblade</option><option>Assassin</option><option>Wytchhunter</option>
+          </optgroup>
+          <optgroup label="Scholar">
+            <option>Mage</option><option>Druid</option><option>Bard</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field-group" id="opt-sphere-group" style="display:none">
+        <label class="field-label">Sphere</label>
+        <select class="field-input" id="opt-sphere">
+          <option value="Psionics">Psionics</option>
+          <option value="Protections">Protections</option>
+          <option value="Nature">Nature</option>
+          <option value="Healing">Healing</option>
+          <option value="Elemental">Elemental</option>
+          <option value="Necromancy">Necromancy</option>
+          <option value="Sigil">Sigil</option>
+          <option value="Wytchcraft">Wytchcraft</option>
+          <option value="Dark">Dark</option>
+          <option value="Light">Light</option>
+          <option value="Draconic">Draconic</option>
+          <option value="Dredgecraft">Dredgecraft</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Vocation (optional)</label>
+        <select class="field-input" id="opt-voc">
+          <option value="">None</option>
+          <optgroup label="Standard">
+            <option>Archer</option><option>Battle Mage</option><option>Blood Reaver</option>
+            <option>Brew Master</option><option>Bounty Hunter</option><option>Conqueror</option>
+            <option>Shaman</option><option>Stalwart</option><option>Swashbuckler</option>
+            <option>Undead Hunter</option>
+          </optgroup>
+          <optgroup label="Favoured">
+            <option>Paladin</option><option>Dread Knight</option><option>Lightweaver</option>
+            <option>Darkweaver</option><option>Dragon Knight</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Level</label>
+        <input class="field-input" id="opt-level" type="number" min="1" max="20" value="5">
+      </div>
+      <button class="gen-btn" onclick="runOptimizedBuild()">&#127919; Build</button>
+    </div>
+    <div class="gen-results" id="opt-results">
+      <div class="gen-empty">Select an occupation and level then click Build.
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
