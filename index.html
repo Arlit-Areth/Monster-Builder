@@ -403,6 +403,68 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
     </div>
   </div>
 
+  <!-- Optimized Builder -->
+  <div class="gen-panel">
+    <div class="panel-header"><span class="panel-title">&#127919; Optimized Build</span></div>
+    <div class="gen-inputs" style="grid-template-columns: 1fr 1fr 1fr 80px auto; flex-wrap:wrap;">
+      <div class="field-group">
+        <label class="field-label">Occupation</label>
+        <select class="field-input" id="opt-occ" oninput="updateOptSphereVisibility()">
+          <optgroup label="Warrior">
+            <option>Mercenary</option><option>Ranger</option><option>Templar</option>
+          </optgroup>
+          <optgroup label="Rogue">
+            <option>Nightblade</option><option>Assassin</option><option>Wytchhunter</option>
+          </optgroup>
+          <optgroup label="Scholar">
+            <option>Mage</option><option>Druid</option><option>Bard</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field-group" id="opt-sphere-group" style="display:none">
+        <label class="field-label">Sphere</label>
+        <select class="field-input" id="opt-sphere">
+          <option value="Psionics">Psionics</option>
+          <option value="Protections">Protections</option>
+          <option value="Nature">Nature</option>
+          <option value="Healing">Healing</option>
+          <option value="Elemental">Elemental</option>
+          <option value="Necromancy">Necromancy</option>
+          <option value="Sigil">Sigil</option>
+          <option value="Wytchcraft">Wytchcraft</option>
+          <option value="Dark">Dark</option>
+          <option value="Light">Light</option>
+          <option value="Draconic">Draconic</option>
+          <option value="Dredgecraft">Dredgecraft</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Vocation (optional)</label>
+        <select class="field-input" id="opt-voc">
+          <option value="">None</option>
+          <optgroup label="Standard">
+            <option>Archer</option><option>Battle Mage</option><option>Blood Reaver</option>
+            <option>Brew Master</option><option>Bounty Hunter</option><option>Conqueror</option>
+            <option>Shaman</option><option>Stalwart</option><option>Swashbuckler</option>
+            <option>Undead Hunter</option>
+          </optgroup>
+          <optgroup label="Favoured">
+            <option>Paladin</option><option>Dread Knight</option><option>Lightweaver</option>
+            <option>Darkweaver</option><option>Dragon Knight</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Level</label>
+        <input class="field-input" id="opt-level" type="number" min="1" max="20" value="5">
+      </div>
+      <button class="gen-btn" onclick="runOptimizedBuild()">&#127919; Build</button>
+    </div>
+    <div class="gen-results" id="opt-results">
+      <div class="gen-empty">Select an occupation and level then click Build.</div>
+    </div>
+  </div>
+
   <div class="main-layout">
     <div>
       <div class="panel">
@@ -1836,6 +1898,405 @@ function generateMonsterBuild(occupation, level) {
 
 
 
+// ═══════════════════════════════════════════════════════
+// OPTIMIZED BUILD GENERATOR
+// ═══════════════════════════════════════════════════════
+
+// Occupation → vocation compatibility (which vocations pair with which occupations/classes)
+// Based on UW LARP lore and class synergy
+const VOC_OCC_COMPAT = {
+  // Warrior vocations
+  Archer:       ['warrior'],
+  'Battle Mage':['warrior','scholar'],
+  'Blood Reaver':['warrior','rogue'],
+  'Brew Master': ['warrior','rogue','scholar'],
+  'Bounty Hunter':['warrior','rogue'],
+  Conqueror:    ['warrior'],
+  Shaman:       ['warrior','scholar'],
+  Stalwart:     ['warrior'],
+  Swashbuckler: ['warrior','rogue'],
+  'Undead Hunter':['warrior','rogue','scholar'],
+  // Rogue vocations
+  // Scholar vocations
+  Artisan:      ['scholar'],  // non-combat, included for completeness but no combat abilities
+  // Favoured
+  Paladin:      ['warrior','scholar'],
+  'Dread Knight':['warrior','rogue'],
+  Lightweaver:  ['scholar'],
+  Darkweaver:   ['scholar','rogue'],
+  'Dragon Knight':['warrior','scholar'],
+};
+
+// Per-occupation optimized skill priority lists
+// Format: [{name, qty, prereqs[], minLevel}]
+// qty = max purchases at any level (capped by CP)
+// Ordered by priority — greedy fill in order
+
+const OPT_SKILL_PRIORITIES = {
+  // ── WARRIOR OCCUPATIONS ─────────────────────────────
+  Mercenary: [
+    // Core weapon investment
+    {name:'Weapon Group Proficiency: Medium', qty:1},
+    {name:'Self Mutilate', qty:1},
+    {name:'Specialization +1: Weapon Specific', qty:1, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Specialization +1: Weapon Group',    qty:1, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Flurry of Blows', qty:3},
+    {name:'Whirlwind of Blows', qty:3, prereqs:['Flurry of Blows'], minLevel:1},
+    {name:'Slay/Parry', qty:1, prereqs:['Specialization +1: Weapon Specific']},
+    {name:'Slay/Parry: Subsequent', qty:5, prereqs:['Slay/Parry']},
+    {name:'Slay/Parry: Master', qty:1, prereqs:['Specialization +1: Weapon Group']},
+    {name:'Slay/Parry: Master Subsequent', qty:5, prereqs:['Slay/Parry: Master']},
+    {name:'Heavy Armour', qty:1},
+    {name:'Shield', qty:1},
+    // Warrior frags
+    {name:'Trip',      qty:3},
+    {name:'Cripple',   qty:2},
+    {name:'Decapitate',qty:3, prereqs:['Slay/Parry']},
+    {name:'Disembowel',qty:2, prereqs:['Specialization +1: Weapon Specific']},
+    // Occupational
+    {name:'Hamstring', qty:3, minLevel:3},
+    {name:'Head-Butt', qty:2, minLevel:6},
+    {name:'Dismember', qty:3, minLevel:9},
+    {name:"Razor's Edge", qty:1, minLevel:12},
+    // Fill
+    {name:'Flurry of Blows', qty:5},
+    {name:'Weapon Group Proficiency: Large', qty:1},
+  ],
+  Ranger: [
+    {name:'Weapon Group Proficiency: Medium', qty:1},
+    {name:'Self Mutilate', qty:1},
+    {name:'Specialization +1: Weapon Specific', qty:1, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Flurry of Blows', qty:3},
+    {name:'Whirlwind of Blows', qty:3, prereqs:['Flurry of Blows']},
+    {name:'Slay/Parry', qty:1, prereqs:['Specialization +1: Weapon Specific']},
+    {name:'Slay/Parry: Subsequent', qty:5, prereqs:['Slay/Parry']},
+    {name:'Heavy Armour', qty:1},
+    {name:'Shield', qty:1},
+    {name:'Trip', qty:3},
+    {name:'Cripple', qty:2},
+    {name:'Decapitate', qty:3, prereqs:['Slay/Parry']},
+    // Ranger occupationals
+    {name:"Nature's Grasp", qty:2, minLevel:9},
+    {name:'Call of the Hunt', qty:1, minLevel:12},
+    {name:'Flurry of Blows', qty:5},
+    {name:'Weapon Group Proficiency: Large', qty:1},
+  ],
+  Templar: [
+    {name:'Weapon Group Proficiency: Medium', qty:1},
+    {name:'Self Mutilate', qty:1},
+    {name:'Shield', qty:1},
+    {name:'Heavy Armour', qty:1},
+    {name:'Specialization +1: Weapon Specific', qty:1, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Specialization +1: Weapon Group', qty:1, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Slay/Parry', qty:1, prereqs:['Specialization +1: Weapon Specific']},
+    {name:'Slay/Parry: Subsequent', qty:5, prereqs:['Slay/Parry']},
+    {name:'Slay/Parry: Master', qty:1, prereqs:['Specialization +1: Weapon Group']},
+    {name:'Slay/Parry: Master Subsequent', qty:5, prereqs:['Slay/Parry: Master']},
+    {name:'Flurry of Blows', qty:3},
+    {name:'Whirlwind of Blows', qty:3, prereqs:['Flurry of Blows']},
+    {name:'Trip', qty:2},
+    {name:'Decapitate', qty:3, prereqs:['Slay/Parry']},
+    {name:'Disembowel', qty:2, prereqs:['Specialization +1: Weapon Specific']},
+    // Templar occupationals
+    {name:'Burn Slot', qty:1, minLevel:3},
+    {name:'Scroll Harvest', qty:1, minLevel:6},
+    {name:'Weapon Break', qty:2, minLevel:9},
+    {name:'Weapon Conduit', qty:2, minLevel:12},
+    {name:'Flurry of Blows', qty:5},
+  ],
+  // ── ROGUE OCCUPATIONS ────────────────────────────────
+  Nightblade: [
+    {name:'Weapon Group Proficiency: Medium', qty:1},
+    {name:'Weapon Specific Proficiency: Exotic', qty:1}, // stiletto
+    {name:'Self Mutilate', qty:1},
+    {name:'Ambidexterity', qty:1},
+    {name:'Florentine', qty:1, prereqs:['Ambidexterity']},
+    {name:'Critical +2: Specific', qty:5, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Specialization +1: Weapon Specific', qty:1, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Execute', qty:1, prereqs:['Critical +2: Specific']},
+    {name:'Execute: Subsequent', qty:5, prereqs:['Execute']},
+    {name:'Dodge', qty:1, prereqs:['Critical +2: Specific']},
+    {name:'Dodge: Additional', qty:5, prereqs:['Dodge','Critical +2: Specific']},
+    {name:'Vital Blow', qty:3},
+    {name:'Garrotte', qty:1},
+    {name:'Riposte', qty:3},
+    {name:'Sucker Punch', qty:2},
+    // Nightblade occupationals
+    {name:'Feint', qty:2, minLevel:3},
+    {name:'Dim', qty:2, minLevel:9},
+    {name:'Critical +2: Specific', qty:5}, // continue stacking
+  ],
+  Assassin: [
+    {name:'Weapon Specific Proficiency: Exotic', qty:1}, // stiletto = main weapon
+    {name:'Weapon Group Proficiency: Medium', qty:1},
+    {name:'Self Mutilate', qty:1},
+    {name:'Ambidexterity', qty:1},
+    {name:'Florentine', qty:1, prereqs:['Ambidexterity']},
+    {name:'Critical +2: Specific', qty:5, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Specialization +1: Weapon Specific', qty:1, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Execute', qty:1, prereqs:['Critical +2: Specific']},
+    {name:'Execute: Subsequent', qty:5, prereqs:['Execute']},
+    {name:'Garrotte', qty:1},
+    {name:'Vital Blow', qty:3},
+    {name:'Sap', qty:3},
+    {name:'Riposte', qty:2},
+    {name:'Sucker Punch', qty:2},
+    {name:'Dodge', qty:1, prereqs:['Critical +2: Specific']},
+    {name:'Dodge: Additional', qty:5, prereqs:['Dodge','Critical +2: Specific']},
+    // Assassin occupationals
+    {name:'Shiv', qty:3, minLevel:3},
+    {name:'Silent Strike', qty:3, minLevel:6},
+    {name:'Spirit Sever', qty:2, minLevel:9},
+    {name:'Penetration', qty:2, minLevel:12},
+    {name:'Critical +2: Specific', qty:5},
+  ],
+  Wytchhunter: [
+    {name:'Weapon Group Proficiency: Medium', qty:1},
+    {name:'Self Mutilate', qty:1},
+    {name:'Critical +2: Specific', qty:3, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Specialization +1: Weapon Specific', qty:1, prereqs:['Weapon Group Proficiency: Medium']},
+    {name:'Execute', qty:1, prereqs:['Critical +2: Specific']},
+    {name:'Execute: Subsequent', qty:3, prereqs:['Execute']},
+    {name:'Vital Blow', qty:3},
+    {name:'Dodge', qty:1, prereqs:['Critical +2: Specific']},
+    {name:'Dodge: Additional', qty:3, prereqs:['Dodge','Critical +2: Specific']},
+    {name:'Riposte', qty:2},
+    {name:'Sucker Punch', qty:2},
+    // Wytchhunter occupationals (all combat-relevant)
+    {name:'Wytch Mark / Opposed Sphere', qty:1, minLevel:3},
+    {name:'Twist of the Tongue', qty:1, minLevel:6},
+    {name:'Karmic Ricochet', qty:2, minLevel:9},
+    {name:'Counter Magic', qty:2, minLevel:12},
+    {name:'Critical +2: Specific', qty:5},
+  ],
+  // ── SCHOLAR OCCUPATIONS ──────────────────────────────
+  Mage: [
+    // Prereqs first
+    {name:'Read & Write', qty:1},
+    {name:'Read Magic', qty:1, prereqs:['Read & Write']},
+    {name:'Read Magic: Advanced', qty:1, prereqs:['Read Magic']},
+    // Mage occupational (spell slot recovery — combat value)
+    {name:'Mana Harvest', qty:3, minLevel:6},
+    // Spell recovery frags — keep spells flowing in combat
+    {name:'Harvest', qty:5},
+    {name:'Refocus', qty:5},
+    // Combat Wizardry lower priority — spells come first
+    {name:'Self Mutilate', qty:1},
+    {name:'Combat Wizardry', qty:1, prereqs:['Self Mutilate']},
+  ],
+  Druid: [
+    {name:'Read & Write', qty:1},
+    {name:'Read Magic', qty:1, prereqs:['Read & Write']},
+    {name:'Read Magic: Advanced', qty:1, prereqs:['Read Magic']},
+    {name:'Self Mutilate', qty:1},
+    {name:'Combat Wizardry', qty:1, prereqs:['Self Mutilate']},
+    {name:'Elemental Attunement', qty:3},
+    {name:'Harvest', qty:5},
+    {name:'Refocus', qty:5},
+    // Druid occupational
+    {name:'Totem', qty:1, minLevel:9},
+    // Sphere purchase handled separately
+  ],
+  Bard: [
+    {name:'Read & Write', qty:1},
+    {name:'Read Magic', qty:1, prereqs:['Read & Write']},
+    {name:'Read Magic: Advanced', qty:1, prereqs:['Read Magic']},
+    {name:'Self Mutilate', qty:1},
+    {name:'Combat Wizardry', qty:1, prereqs:['Self Mutilate']},
+    {name:'Elemental Attunement', qty:2},
+    {name:'Harvest', qty:5},
+    {name:'Refocus', qty:5},
+    // Bard occupationals
+    {name:'Song of Aversion', qty:2, minLevel:3},
+    {name:'Song of Love', qty:2, minLevel:6},
+    {name:'Song of Heroism', qty:2, minLevel:12},
+    // Sphere purchase handled separately
+  ],
+};
+
+// Vocational combat ability priorities (filtered to combat-only)
+const VOC_ABILITY_PRIORITIES = {
+  Archer:       [{name:'Arrow Dodge',qty:1,minLevel:3},{name:'Stand and Deliver',qty:2,minLevel:6},{name:'Maim',qty:2,minLevel:9},{name:'Death Arrow',qty:2,minLevel:12}],
+  'Battle Mage':[{name:'Maximize',qty:2,minLevel:6},{name:'Twin Spell',qty:2,minLevel:9},{name:'Wizard Staff',qty:2,minLevel:12}],
+  'Blood Reaver':[{name:'Blood Harvest',qty:2,minLevel:3},{name:'Master of Vitae',qty:2,minLevel:6},{name:'Blood Boil',qty:2,minLevel:9},{name:'Tap the Vein',qty:2,minLevel:12}],
+  'Brew Master': [{name:'Mixologist',qty:2,minLevel:6},{name:'Firebreathing',qty:2,minLevel:9},{name:'Drunken Master',qty:2,minLevel:12}],
+  'Bounty Hunter':[{name:'Mercy',qty:2,minLevel:3},{name:'Bola',qty:2,minLevel:6},{name:'Smoke Bomb',qty:1,minLevel:9},{name:'Impale',qty:2,minLevel:12}],
+  Conqueror:    [{name:'Grit',qty:2,minLevel:3},{name:'Ego Armour',qty:2,minLevel:6},{name:'Breakthrough',qty:2,minLevel:9},{name:'Rallying Cry',qty:2,minLevel:12}],
+  Shaman:       [{name:'Rite of Weaving/Unweaving',qty:1,minLevel:3},{name:'Rite of War',qty:2,minLevel:6}],
+  Stalwart:     [{name:'Shield Parry',qty:2,minLevel:3},{name:'Conviction',qty:2,minLevel:6},{name:'Fortress',qty:2,minLevel:9},{name:'Imbue Shield',qty:2,minLevel:12}],
+  Swashbuckler: [{name:'Finesse',qty:1,minLevel:3},{name:'En Garde!',qty:2,minLevel:6},{name:'Prise de Fer',qty:2,minLevel:9},{name:'Aegis',qty:2,minLevel:12}],
+  'Undead Hunter':[{name:"Hunter's Focus",qty:2,minLevel:3},{name:"Hunter's Attrition",qty:2,minLevel:6},{name:'Crystal of Light',qty:2,minLevel:9},{name:'Final Rest',qty:2,minLevel:12}],
+  Paladin:      [{name:'Defender',qty:1,minLevel:3},{name:'Holy Symbol',qty:1,minLevel:9},{name:'Headpiece',qty:1,minLevel:12}],
+  'Dread Knight':[{name:"Harbinger's Blade",qty:1,minLevel:3},{name:'Unholy Symbol',qty:1,minLevel:9},{name:'Headpiece',qty:1,minLevel:12}],
+  Lightweaver:  [{name:'Sacred Bond',qty:2,minLevel:6}],
+  Darkweaver:   [{name:'Sacred Bond',qty:2,minLevel:6}],
+  'Dragon Knight':[{name:'Draconic Covenant',qty:2,minLevel:6}],
+};
+
+// Preferred spheres per occupation for optimized scholar builds
+const OPT_SPHERE_PREF = {
+  Mage:  'Psionics',
+  Druid: 'Nature',
+  Bard:  'Dredgecraft',
+  Wytchhunter: 'Wytchcraft',
+  Templar: 'Light',
+  Ranger: 'Nature',
+  Nightblade: 'Wytchcraft',
+};
+
+// ── Main optimized build function ──────────────────────
+function generateOptimizedBuild(occupation, vocation, level, chosenSphere) {
+  var cls      = GEN_OCC_CLASS[occupation] || 'warrior';
+  var occIdx   = GEN_OCC_IDX[occupation]   || 0;
+  var totalCP  = GEN_LEVEL_CP[Math.min(level, 20)] || 2050;
+  var maxCirc  = Math.min(9, GEN_MAX_CIRCLES[Math.min(level, 20)] || 9);
+  var remaining = totalCP;
+  var selected  = [];
+  var purchaseCounts = {};
+
+  function getCost(skillName) {
+    var costs = GEN_SKILL_COSTS[skillName];
+    return costs ? (costs[occIdx] || costs[0] || 9999) : 9999;
+  }
+
+  function tryBuy(name, cost, note, count) {
+    var qty = count || 1;
+    if (remaining < cost * qty) {
+      // Buy as many as we can
+      qty = Math.floor(remaining / cost);
+      if (qty === 0) return false;
+    }
+    remaining -= cost * qty;
+    purchaseCounts[name] = (purchaseCounts[name] || 0) + qty;
+    var existing = selected.find(function(s){ return s.name === name; });
+    if (existing) {
+      existing.count += qty;
+      existing.cost  += cost * qty;
+    } else {
+      selected.push({name:name, cost:cost*qty, note:note||'', count:qty});
+    }
+    return true;
+  }
+
+  function prereqsMet(prereqs) {
+    return !prereqs || prereqs.every(function(p){ return !!purchaseCounts[p]; });
+  }
+
+  function ensurePrereqs(prereqs, note) {
+    if (!prereqs) return true;
+    for (var i = 0; i < prereqs.length; i++) {
+      var p = prereqs[i];
+      if (!purchaseCounts[p]) {
+        var pc = getCost(p);
+        if (pc === 9999 || remaining < pc) return false;
+        tryBuy(p, pc, 'Prerequisite', 1);
+      }
+    }
+    return true;
+  }
+
+  // ── PHASE 1: Scholar sphere bundle (single sphere, user-chosen for scholars) ──
+  if (cls === 'scholar') {
+    var rwc = getCost('Read & Write');
+    if (remaining >= rwc) tryBuy('Read & Write', rwc, 'Magic prerequisite', 1);
+    var rmc = getCost('Read Magic');
+    if (purchaseCounts['Read & Write'] && remaining >= rmc) tryBuy('Read Magic', rmc, 'Magic prerequisite', 1);
+    var rmac = getCost('Read Magic: Advanced');
+    if (purchaseCounts['Read Magic'] && remaining >= rmac) tryBuy('Read Magic: Advanced', rmac, 'Magic prerequisite', 1);
+
+    // Single sphere — use user-chosen sphere (passed in) or fall back to occupation default
+    var prefSphere = chosenSphere || OPT_SPHERE_PREF[occupation];
+    if (prefSphere && purchaseCounts['Read Magic']) {
+      var sphereCost = 0; var circlesBought = 0;
+      for (var c = 1; c <= maxCirc; c++) {
+        var cc = GEN_SPELL_LEVEL_COSTS[c-1] ? GEN_SPELL_LEVEL_COSTS[c-1][occIdx] : 30;
+        if (remaining >= cc) { remaining -= cc; sphereCost += cc; circlesBought++; }
+        else break;
+      }
+      if (circlesBought > 0) {
+        selected.push({name:'Sphere: '+prefSphere, cost:sphereCost, note:'Sphere purchase', sphere:prefSphere, circles:circlesBought, count:1});
+        purchaseCounts['Sphere: '+prefSphere] = 1;
+      }
+    }
+  }
+
+  // ── PHASE 2: Prioritized occupation skills (greedy in priority order) ──
+  var occPriority = OPT_SKILL_PRIORITIES[occupation] || [];
+  occPriority.forEach(function(entry) {
+    var minLv = entry.minLevel || 1;
+    if (minLv > level) return;
+    if (purchaseCounts[entry.name] && purchaseCounts[entry.name] >= entry.qty) return;
+    // Ensure prereqs
+    if (!ensurePrereqs(entry.prereqs, 'Prerequisite')) return;
+    var cost = getCost(entry.name);
+    if (cost === 9999) return;
+    // Buy up to qty (minus already bought)
+    var alreadyBought = purchaseCounts[entry.name] || 0;
+    var toBuy = entry.qty - alreadyBought;
+    if (toBuy <= 0) return;
+    // Buy one at a time up to toBuy, stopping when CP runs out
+    for (var i = 0; i < toBuy; i++) {
+      if (remaining < cost) break;
+      tryBuy(entry.name, cost, entry.name.indexOf('Frag') !== -1 ? cls.charAt(0).toUpperCase()+cls.slice(1)+' Frag' : cls.charAt(0).toUpperCase()+cls.slice(1)+' Skill', 1);
+    }
+  });
+
+  // ── PHASE 3: Vocational abilities (if vocation provided) ──
+  if (vocation && VOC_ABILITY_PRIORITIES[vocation]) {
+    VOC_ABILITY_PRIORITIES[vocation].forEach(function(ab) {
+      if ((ab.minLevel || 1) > level) return;
+      var alreadyBought = purchaseCounts[ab.name] || 0;
+      if (alreadyBought >= ab.qty) return;
+      // Find cost from GEN_OCC_ABILITIES or default 30/60/90/120
+      var abCost = 30;
+      var allVocAbils = (VOC_ABILITY_PRIORITIES[vocation] || []);
+      // Try to find in the skill costs table
+      var skCost = GEN_SKILL_COSTS[ab.name];
+      if (skCost) abCost = skCost[occIdx] || skCost[0] || 30;
+      else {
+        // Estimate from tier position
+        var pos = allVocAbils.findIndex(function(x){ return x.name === ab.name; });
+        abCost = [30,60,90,120][pos] || 30;
+      }
+      var toBuy = ab.qty - alreadyBought;
+      for (var i = 0; i < toBuy; i++) {
+        if (remaining < abCost) break;
+        tryBuy(ab.name, abCost, 'Vocation ('+vocation+')', 1);
+      }
+    });
+  }
+
+  // ── PHASE 4: Fill remaining CP with more of the best skills ──
+  // Re-run occupation priority list for additional purchases of stackable skills
+  if (remaining > 0) {
+    occPriority.forEach(function(entry) {
+      if ((entry.minLevel||1) > level) return;
+      if (!prereqsMet(entry.prereqs)) return;
+      var cost = getCost(entry.name);
+      if (cost === 9999 || remaining < cost) return;
+      while (remaining >= cost) {
+        var cur = purchaseCounts[entry.name] || 0;
+        var max = MAX_PURCHASES[entry.name] || entry.qty || 1;
+        if (cur >= max) break;
+        tryBuy(entry.name, cost, cls.charAt(0).toUpperCase()+cls.slice(1)+' Skill', 1);
+      }
+    });
+  }
+
+  return {
+    occupation: occupation,
+    vocation:   vocation || null,
+    cls:        cls,
+    level:      level,
+    totalCP:    totalCP,
+    spent:      totalCP - remaining,
+    remaining:  remaining,
+    maxCircles: maxCirc,
+    selections: selected
+  };
+}
+
+
 const ALL_ITEMS = [
   ...MONSTER_ABILITIES.map(function(a){ return Object.assign({},a,{_type:'monster'}); }),
   ...SB_SPELLS.map(function(s){ return Object.assign({},s,{_type:'spell',cat:s.sphere}); }),
@@ -2359,6 +2820,87 @@ function genAddToBuilder(skillName, sphereName, circles, count) {
   var inp2 = document.getElementById('search-' + id);
   if (inp2) inp2.value = item.name;
   updateSummary();
+}
+
+// ── Optimized Build UI ──
+function updateOptSphereVisibility() {
+  var occ = document.getElementById('opt-occ').value;
+  var cls = GEN_OCC_CLASS[occ] || 'warrior';
+  var grp = document.getElementById('opt-sphere-group');
+  if (grp) grp.style.display = cls === 'scholar' ? '' : 'none';
+}
+
+function runOptimizedBuild() {
+  var occ   = document.getElementById('opt-occ').value;
+  var voc   = document.getElementById('opt-voc').value || null;
+  var level = parseInt(document.getElementById('opt-level').value) || 5;
+  level = Math.max(1, Math.min(20, level));
+  var cls   = GEN_OCC_CLASS[occ] || 'warrior';
+  var chosenSphere = cls === 'scholar'
+    ? (document.getElementById('opt-sphere').value || null)
+    : null;
+
+  // Full reset
+  rows = [];
+  nextId = 1;
+  activeDropdown = null;
+  focusedIndex = -1;
+  renderRows();
+  document.getElementById('inp-type').value = '';
+  document.getElementById('inp-body').value = '';
+  document.getElementById('inp-ap').value = '';
+  document.getElementById('inp-damage').value = '';
+  document.getElementById('opt-results').innerHTML = '<div class="gen-empty">Building…</div>';
+  updateSummary();
+
+  var result = generateOptimizedBuild(occ, voc, level, chosenSphere);
+
+  // Auto-add to builder
+  result.selections.forEach(function(sk) {
+    genAddToBuilder(sk.name, sk.sphere || '', sk.circles || 0, sk.count || 1);
+  });
+
+  // Display summary
+  var clsLabel = result.cls.charAt(0).toUpperCase() + result.cls.slice(1);
+  var title = occ + ' (' + clsLabel + ')' + (voc ? ' + ' + voc : '') + ' — Level ' + level;
+  var html = '<div class="gen-result-header">'
+    + '<span class="gen-result-title">' + title + '</span>'
+    + '<span class="gen-result-meta">'
+    + result.spent + ' CP spent of ' + result.totalCP
+    + ' &bull; ' + result.remaining + ' CP unspent'
+    + (result.cls === 'scholar' ? ' &bull; Max spell circle: ' + result.maxCircles : '')
+    + '</span></div>';
+
+  var spheres = result.selections.filter(function(s){ return s.sphere; });
+  var prereqs = result.selections.filter(function(s){ return !s.sphere && s.note === 'Prerequisite'; });
+  var magicPre= result.selections.filter(function(s){ return !s.sphere && s.note === 'Magic prerequisite'; });
+  var vocAbs  = result.selections.filter(function(s){ return s.note && s.note.indexOf('Vocation') === 0; });
+  var rest    = result.selections.filter(function(s){
+    return !s.sphere && s.note !== 'Prerequisite' && s.note !== 'Magic prerequisite'
+        && !(s.note && s.note.indexOf('Vocation') === 0);
+  });
+
+  function itemHtml(sk) {
+    var isSphere = !!sk.sphere;
+    var cls2 = isSphere ? ' is-sphere' : '';
+    var costBadge = '<span class="gen-item-cost">' + sk.cost + ' CP</span>';
+    var cntBadge = sk.count > 1 ? ' <span style="font-size:10px;font-weight:bold;color:var(--color-text-warning)">×' + sk.count + '</span>' : '';
+    var circHtml = sk.circles ? '<div class="gen-item-circles">Circles 1–' + sk.circles + ' | Max available: ' + result.maxCircles + '</div>' : '';
+    return '<div class="gen-item' + cls2 + '">'
+      + '<div class="gen-item-header">'
+      + '<span class="gen-item-name">' + sk.name + cntBadge + '</span>'
+      + costBadge + '</div>'
+      + (sk.note && !isSphere ? '<span class="gen-item-note">' + sk.note + '</span>' : '')
+      + circHtml + '</div>';
+  }
+
+  if (magicPre.length) html += '<div class="gen-section-label">Magic Prerequisites</div>' + magicPre.map(itemHtml).join('');
+  if (spheres.length)  html += '<div class="gen-section-label">Sphere Purchase</div>'     + spheres.map(itemHtml).join('');
+  if (prereqs.length)  html += '<div class="gen-section-label">Skill Prerequisites</div>' + prereqs.map(itemHtml).join('');
+  if (rest.length)     html += '<div class="gen-section-label">Occupation Skills</div>'   + rest.map(itemHtml).join('');
+  if (vocAbs.length)   html += '<div class="gen-section-label">Vocation Abilities</div>'  + vocAbs.map(itemHtml).join('');
+
+  document.getElementById('opt-results').innerHTML = html;
 }
 
 // ── Init ──
