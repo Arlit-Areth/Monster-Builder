@@ -324,6 +324,16 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
   .tool-modal-title { font-size:13px; font-weight:600; letter-spacing:0.5px; }
   .tool-modal-close { background:none; border:none; font-size:20px; line-height:1; cursor:pointer; color:var(--color-text-secondary); padding:0 4px; }
   .tool-modal-close:hover { color:var(--color-text-primary); }
+  .manual-form { display:flex; flex-direction:column; gap:14px; }
+  .manual-form .field-group { display:flex; flex-direction:column; gap:5px; }
+  .manual-form .field-label { font-size:11px; color:var(--color-text-secondary); }
+  .manual-form textarea { width:100%; padding:8px 10px; font-size:13px; font-family:var(--font-sans); border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); background:var(--color-background-primary); color:var(--color-text-primary); resize:vertical; min-height:80px; outline:none; line-height:1.5; }
+  .manual-form textarea:focus { box-shadow:0 0 0 2px var(--color-border-info); }
+  .manual-form-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+  .btn-confirm { padding:8px 20px; border:0.5px solid var(--color-border-success); border-radius:var(--border-radius-md); background:var(--color-background-success); color:var(--color-text-success); font-family:var(--font-sans); font-size:13px; font-weight:500; cursor:pointer; }
+  .btn-confirm:hover { opacity:0.85; }
+  .btn-cancel { padding:8px 16px; border:0.5px solid var(--color-border-secondary); border-radius:var(--border-radius-md); background:transparent; color:var(--color-text-secondary); font-family:var(--font-sans); font-size:13px; cursor:pointer; }
+  .btn-cancel:hover { background:var(--color-background-secondary); }
   .tool-modal-body { padding:1.25rem; overflow-y:auto; flex:1; }
   @media (max-width: 680px) { .gen-inputs { grid-template-columns: 1fr 1fr; } .gen-inputs .gen-btn { grid-column: 1/-1; } }
   @media (max-width: 680px) {
@@ -387,6 +397,7 @@ if('caches' in window){caches.keys().then(function(k){k.forEach(function(x){cach
   <div style="display:flex;gap:10px;margin-bottom:1rem;">
     <button class="gen-btn" onclick="openModal('gen-modal')" style="flex:1;padding:10px;">&#127922; Ability Generator</button>
     <button class="gen-btn" onclick="openModal('opt-modal')" style="flex:1;padding:10px;">&#127919; Optimized Build</button>
+    <button class="gen-btn" onclick="openModal('manual-modal')" style="flex:1;padding:10px;">&#9998; Manual Input</button>
   </div>
 
   <div class="main-layout">
@@ -2628,6 +2639,52 @@ document.addEventListener('mousedown', function(e) {
 function openModal(id) {
   var el = document.getElementById(id);
   if (el) el.classList.add('open');
+  // Clear manual form when opening it
+  if (id === 'manual-modal') {
+    ['man-name','man-cat','man-incant','man-desc'].forEach(function(fid){
+      var f = document.getElementById(fid); if (f) f.value = '';
+    });
+    var ct = document.getElementById('man-count'); if (ct) ct.value = 1;
+    var tp = document.getElementById('man-type'); if (tp) tp.value = 'skill';
+    var err = document.getElementById('man-error'); if (err) err.style.display = 'none';
+  }
+}
+
+function confirmManualInput() {
+  var name   = (document.getElementById('man-name').value || '').trim();
+  var err    = document.getElementById('man-error');
+  if (!name) { if (err) err.style.display = ''; return; }
+  if (err) err.style.display = 'none';
+
+  var type   = document.getElementById('man-type').value   || 'skill';
+  var cat    = (document.getElementById('man-cat').value   || '').trim();
+  var incant = (document.getElementById('man-incant').value|| '').trim();
+  var desc   = (document.getElementById('man-desc').value  || '').trim();
+  var count  = parseInt(document.getElementById('man-count').value) || 1;
+
+  var item = {
+    name:   name,
+    _type:  type,
+    cat:    cat   || (type === 'monster' ? 'Monster Ability' : type === 'spell' ? 'Spell' : 'Skill'),
+    incant: incant,
+    call:   incant, // use same value for both call and incant
+    desc:   desc,
+    sphere: type === 'spell' ? cat : undefined,
+    level:  undefined
+  };
+
+  addRow();
+  var id = nextId - 1;
+  setRowItem(id, item);
+  if (count > 1) {
+    setRowCount(id, count);
+    var cInp = document.getElementById('count-' + id);
+    if (cInp) cInp.value = count;
+  }
+  var inp = document.getElementById('search-' + id);
+  if (inp) inp.value = name;
+  updateSummary();
+  closeModal('manual-modal');
 }
 function closeModal(id) {
   var el = document.getElementById(id);
@@ -2950,6 +3007,53 @@ updateSummary();
       </div><!-- /tool-modal-body -->
     </div><!-- /tool-modal -->
   </div><!-- /tool-modal-backdrop -->
+
+  <!-- Manual Input Modal -->
+  <div class="tool-modal-backdrop" id="manual-modal" onclick="closeModalBackdrop(event,'manual-modal')">
+    <div class="tool-modal" style="max-width:560px">
+      <div class="tool-modal-header">
+        <span class="tool-modal-title">&#9998; Manual Input</span>
+        <button class="tool-modal-close" onclick="closeModal('manual-modal')">&times;</button>
+      </div>
+      <div class="tool-modal-body">
+        <div class="manual-form">
+          <div class="field-group">
+            <label class="field-label">Name <span style="color:var(--color-text-danger)">*</span></label>
+            <input class="field-input" id="man-name" type="text" placeholder="e.g. Hamstring, Fireball, Bite&hellip;">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Type</label>
+            <select class="field-input" id="man-type">
+              <option value="skill">Skill</option>
+              <option value="spell">Spell</option>
+              <option value="monster">Monster Ability</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Category / Sphere</label>
+            <input class="field-input" id="man-cat" type="text" placeholder="e.g. Warrior, Elemental, Occupational (Mercenary)&hellip;">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Call / Incant</label>
+            <input class="field-input" id="man-incant" type="text" placeholder="e.g. 1 Body Trip! or I invoke [type] to inflict&hellip;">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Description</label>
+            <textarea id="man-desc" placeholder="Full description of this ability&hellip;"></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Count</label>
+            <input class="field-input" id="man-count" type="number" min="1" value="1" style="width:80px">
+          </div>
+          <div id="man-error" style="color:var(--color-text-danger);font-size:12px;display:none">Name is required.</div>
+          <div class="manual-form-actions">
+            <button class="btn-cancel" onclick="closeModal('manual-modal')">Cancel</button>
+            <button class="btn-confirm" onclick="confirmManualInput()">&#10003; Add to Builder</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
