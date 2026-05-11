@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+// Self-hosted SW: detect if fetched as a service worker
+if (typeof window === "undefined" && typeof self !== "undefined" && self.addEventListener) {
+  // We're running as the SW — execute SW logic
+  var swCode = 'const CACHE=\'uw-mb-v2\';\nself.addEventListener(\'install\',function(e){self.skipWaiting();});\nself.addEventListener(\'activate\',function(e){self.clients.claim();});\nself.addEventListener(\'fetch\',function(e){\n  e.respondWith(caches.open(CACHE).then(function(c){\n    return c.match(e.request).then(function(r){\n      return r||fetch(e.request).then(function(resp){\n        c.put(e.request,resp.clone());return resp;\n      });\n    });\n  }));\n});';
+  eval(swCode);
+}
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Unofficial UW Monster Builder</title>
@@ -3083,19 +3091,16 @@ updateSummary();
   </div>
 
 <script>
-// ── Inline Service Worker via blob URL ──
+// ── Service Worker: register this page as its own SW ──
 (function(){
-  var swSrc = 'const CACHE="uw-mb-v1";const ASSETS=["./"];self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});';
   if (!("serviceWorker" in navigator)) return;
-  var blob = new Blob([swSrc], {type:"text/javascript"});
-  var swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl, {scope: "./"}).then(function(reg){
-    console.log("SW registered via blob");
-  }).catch(function(err){
-    console.warn("SW blob failed:", err);
-  });
+  // Register the current page URL + ?sw as the SW
+  // When fetched, the self-check script above will run SW code
+  var swUrl = location.href.split("?")[0] + "?sw=1";
+  navigator.serviceWorker.register(swUrl, {scope: location.pathname.replace(/[^\/]*$/, "") || "/"})
+    .then(function(reg){ console.log("SW registered (self-hosted)"); })
+    .catch(function(err){ console.info("SW not available:", err.message); });
 })();
-
 // ── PWA Install Prompt ──
 var _pwaPrompt = null;
 
